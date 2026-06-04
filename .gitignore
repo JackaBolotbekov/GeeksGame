@@ -1,17 +1,13 @@
-# Dependencies
 node_modules/
-
-# Build output
 dist/
-build/
-
-# Environment and local settings
+coverage/
+playwright-report/
+test-results/
 .env
 .env.*
 !.env.example
-
-# IDE and OS files
 .idea/
 .vscode/
 .DS_Store
 Thumbs.db
+src/generated/
