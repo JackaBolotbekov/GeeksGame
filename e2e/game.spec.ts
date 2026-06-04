@@ -89,3 +89,49 @@ test("standard mobile screens fit without vertical scrolling", async ({ browser 
   await secondContext.close();
   await spectatorContext.close();
 });
+
+test("first-time Telegram player can open name onboarding", async ({ browser }) => {
+  const context = await browser.newContext();
+  await context.addInitScript(() => {
+    Object.defineProperty(window, "Telegram", {
+      configurable: true,
+      value: {
+        WebApp: {
+          initData: "signed-telegram-init-data",
+          ready() {},
+          expand() {},
+        },
+      },
+    });
+  });
+  const page = await context.newPage();
+
+  await page.route("https://telegram.org/js/telegram-web-app.js", (route) =>
+    route.fulfill({ contentType: "application/javascript", body: "" }),
+  );
+  await page.route("**/api/config", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ telegramConfigured: true, devAuth: false }),
+    }),
+  );
+  await page.route("**/api/auth/telegram", (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        sessionToken: "telegram-session",
+        profile: { displayName: null, avatarUrl: null, kind: "telegram" },
+        needsName: true,
+      }),
+    }),
+  );
+
+  await page.goto("/");
+  const playerButton = page.locator(".role-player");
+  await expect(playerButton).toBeEnabled();
+  await playerButton.click();
+  await expect(page.locator(".name-dialog")).toBeVisible();
+  await expect(page.locator(".name-dialog input")).toBeFocused();
+
+  await context.close();
+});

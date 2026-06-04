@@ -138,7 +138,7 @@ export function App() {
             key="roles"
             authLoading={authLoading}
             authError={authError}
-            canPlay={Boolean(profile?.displayName && sessionToken) || config.devAuth}
+            canPlay={Boolean(profile && sessionToken) || config.devAuth}
             hostConnected={game.state.hostConnected}
             onHost={claimHost}
             onPlayer={claimPlayer}
