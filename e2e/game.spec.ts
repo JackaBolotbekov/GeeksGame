@@ -8,6 +8,14 @@ async function expectNoVerticalScroll(page: Page) {
   expect(dimensions.contentHeight).toBeLessThanOrEqual(dimensions.viewportHeight + 1);
 }
 
+async function expectMinimumHeight(page: Page, selector: string, minimum: number) {
+  const heights = await page.locator(selector).evaluateAll((elements) =>
+    elements.map((element) => element.getBoundingClientRect().height),
+  );
+  expect(heights.length).toBeGreaterThan(0);
+  expect(heights.every((height) => height >= minimum)).toBe(true);
+}
+
 test("host and two players can run a scoring round", async ({ browser }) => {
   const hostContext = await browser.newContext();
   const firstContext = await browser.newContext();
@@ -55,6 +63,7 @@ test("standard mobile screens fit without vertical scrolling", async ({ browser 
 
   await host.goto("/");
   await expectNoVerticalScroll(host);
+  await expectMinimumHeight(host, ".role-card", 180);
   await expect.poll(() => host.evaluate(() =>
     getComputedStyle(document.documentElement).getPropertyValue("-webkit-tap-highlight-color"),
   )).toBe("rgba(0, 0, 0, 0)");
@@ -65,9 +74,12 @@ test("standard mobile screens fit without vertical scrolling", async ({ browser 
 
   await first.goto("/");
   await first.locator(".role-player").click();
+  await expectMinimumHeight(first, ".name-preview", 150);
+  await expectNoVerticalScroll(first);
   await first.locator(".name-dialog input").fill("Choko");
   await first.locator(".primary-button").click();
   await expect(first.locator(".buzzer")).toBeVisible();
+  await expectMinimumHeight(first, ".buzzer", 250);
   await expectNoVerticalScroll(first);
 
   await second.goto("/");
@@ -75,6 +87,7 @@ test("standard mobile screens fit without vertical scrolling", async ({ browser 
   await second.locator(".name-dialog input").fill("Meder");
   await second.locator(".primary-button").click();
   await expect(host.locator(".host-player-card")).toHaveCount(2);
+  await expectMinimumHeight(host, ".host-player-card", 220);
   await expectNoVerticalScroll(host);
 
   await spectator.goto("/");
@@ -82,6 +95,7 @@ test("standard mobile screens fit without vertical scrolling", async ({ browser 
   await spectator.locator(".name-dialog input").fill("Viewer");
   await spectator.locator(".primary-button").click();
   await expect(spectator.locator(".queue-banner")).toBeVisible();
+  await expectMinimumHeight(spectator, ".score-row", 170);
   await expectNoVerticalScroll(spectator);
 
   await hostContext.close();

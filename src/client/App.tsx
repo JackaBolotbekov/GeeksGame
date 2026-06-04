@@ -157,6 +157,7 @@ export function App() {
           <NameDialog
             key="name-dialog"
             initialValue={nameMode === "dev" ? "" : profile?.displayName ?? ""}
+            profile={profile}
             required={nameMode !== "edit"}
             onClose={() => {
               if (nameMode === "edit" || nameMode === "dev") setNameMode(null);
@@ -271,6 +272,7 @@ function HostScreen({
 }) {
   return (
     <ScreenFrame
+      variant="host"
       kicker="Панель ведущего"
       title={state.winnerUserId ? "Матч завершён" : `Раунд ${state.round}`}
       onRelease={onRelease}
@@ -369,6 +371,7 @@ function PlayerScreen({
 
   return (
     <ScreenFrame
+      variant="player"
       kicker={me ? `Играет ${me.displayName}` : "Игровой экран"}
       title={state.winnerUserId ? "Финиш!" : `Раунд ${state.round}`}
       onRelease={onRelease}
@@ -396,7 +399,7 @@ function PlayerScreen({
 
 function SpectatorScreen({ state, onRelease }: { state: GameState; onRelease: () => void }) {
   return (
-    <ScreenFrame kicker="Режим зрителя" title={`Раунд ${state.round}`} onRelease={onRelease}>
+    <ScreenFrame variant="spectator" kicker="Режим зрителя" title={`Раунд ${state.round}`} onRelease={onRelease}>
       <div className="queue-banner">
         <span>Вы в очереди</span>
         <strong>#{state.viewer.queuePosition}</strong>
@@ -410,11 +413,13 @@ function SpectatorScreen({ state, onRelease }: { state: GameState; onRelease: ()
 }
 
 function ScreenFrame({
+  variant,
   kicker,
   title,
   onRelease,
   children,
 }: {
+  variant: "host" | "player" | "spectator";
   kicker: string;
   title: string;
   onRelease: () => void;
@@ -422,7 +427,7 @@ function ScreenFrame({
 }) {
   return (
     <motion.section
-      className="game-screen"
+      className={`game-screen ${variant}-screen`}
       initial={{ opacity: 0, scale: 0.985 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.985 }}
@@ -547,11 +552,13 @@ function WinnerOverlay({ state }: { state: GameState }) {
 
 function NameDialog({
   initialValue,
+  profile,
   required,
   onClose,
   onSubmit,
 }: {
   initialValue: string;
+  profile: ProfileState | null;
   required: boolean;
   onClose: () => void;
   onSubmit: (name: string) => Promise<void>;
@@ -576,6 +583,17 @@ function NameDialog({
         <span className="eyebrow">Твоя игровая карточка</span>
         <h2>Как тебя назвать?</h2>
         <p>Это имя сохранится и будет ждать тебя в следующей игре.</p>
+        <div className="name-preview" aria-hidden="true">
+          {profile?.avatarUrl ? (
+            <img src={profile.avatarUrl} alt="" />
+          ) : (
+            <span>{initialValue.trim().slice(0, 2).toUpperCase() || "?"}</span>
+          )}
+          <div>
+            <small>Здесь твои очки</small>
+            <strong>0</strong>
+          </div>
+        </div>
         <input
           autoFocus
           value={name}

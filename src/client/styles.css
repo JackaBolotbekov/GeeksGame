@@ -54,8 +54,12 @@ button:disabled {
 
 .app-shell {
   position: relative;
+  height: 100vh;
+  height: 100dvh;
   min-height: 100vh;
   min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(22px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
 }
@@ -84,6 +88,7 @@ button:disabled {
 }
 
 .topbar {
+  flex: 0 0 auto;
   width: min(1120px, 100%);
   margin: 0 auto 34px;
   display: flex;
@@ -158,6 +163,8 @@ button:disabled {
 
 .role-screen,
 .game-screen {
+  flex: 1 1 auto;
+  min-height: 0;
   width: min(1120px, 100%);
   margin: 0 auto;
 }
@@ -286,6 +293,8 @@ button:disabled {
 
 .game-screen {
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
 .screen-heading {
@@ -680,6 +689,57 @@ button:disabled {
   font-size: 13px;
 }
 
+.name-preview {
+  min-height: 160px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 22px;
+  margin: 18px 0 8px;
+  padding: 18px;
+  border: 3px solid var(--ink);
+  border-radius: 20px;
+  background: #fffef8;
+}
+
+.name-preview > img,
+.name-preview > span {
+  display: grid;
+  width: 112px;
+  height: 112px;
+  place-items: center;
+  border: 4px solid var(--ink);
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.name-preview > span {
+  color: var(--ink);
+  background: var(--yellow);
+  font-family: "Rubik Mono One", sans-serif;
+  font-size: 44px;
+}
+
+.name-preview div {
+  display: grid;
+  justify-items: end;
+  gap: 5px;
+}
+
+.name-preview small {
+  color: #9b9ca2;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.name-preview strong {
+  font-family: "Rubik Mono One", sans-serif;
+  font-size: 64px;
+  line-height: 1;
+}
+
 .name-dialog input {
   width: 100%;
   margin: 12px 0;
@@ -740,94 +800,109 @@ button:disabled {
   }
 
   .topbar {
-    margin-bottom: 10px;
+    margin-bottom: clamp(10px, 1.8vh, 16px);
   }
 
   .brand {
     gap: 8px;
-    font-size: 15px;
+    font-size: clamp(15px, 4.3vw, 18px);
   }
 
   .brand-mark {
-    width: 34px;
-    height: 34px;
+    width: clamp(36px, 10vw, 44px);
+    height: clamp(36px, 10vw, 44px);
     border-radius: 9px 2px 9px 2px;
     font-size: 14px;
   }
 
   .connection {
     gap: 5px;
-    font-size: 10px;
+    font-size: clamp(9px, 2.8vw, 11px);
+  }
+
+  .role-screen,
+  .game-screen {
+    width: 100%;
+    overflow: hidden;
   }
 
   .role-screen {
-    padding-top: clamp(2px, 1.5vh, 12px);
+    display: flex;
+    flex-direction: column;
+    padding-top: clamp(2px, 1vh, 10px);
   }
 
   .eyebrow,
   .micro-label {
-    font-size: 9px;
-    letter-spacing: 1.3px;
+    font-size: clamp(9px, 2.7vw, 11px);
+    letter-spacing: 1.4px;
   }
 
   .role-screen h1 {
-    margin: 7px 0 10px;
-    font-size: clamp(39px, 12.5vw, 52px);
+    margin: clamp(7px, 1.4vh, 12px) 0 clamp(9px, 1.5vh, 14px);
+    font-size: clamp(44px, 14vw, 62px);
     line-height: 0.93;
-    letter-spacing: -2.7px;
+    letter-spacing: -3px;
   }
 
   .lead {
     margin: 0;
-    font-size: clamp(13px, 4vw, 16px);
+    font-size: clamp(14px, 4vw, 17px);
     line-height: 1.4;
   }
 
   .role-grid {
+    flex: 1 1 auto;
+    min-height: 0;
     grid-template-columns: 1fr;
-    gap: 10px;
-    margin-top: clamp(14px, 2.5vh, 22px);
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: clamp(10px, 1.7vh, 15px);
+    margin-top: clamp(14px, 2.3vh, 22px);
   }
 
   .role-card {
-    min-height: 125px;
-    padding: 18px 20px;
-    border-radius: 20px;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: clamp(20px, 5vw, 28px);
+    border-radius: clamp(20px, 6vw, 28px);
   }
 
   .role-card strong {
     max-width: 84%;
-    margin: 34px 0 4px;
-    font-size: clamp(21px, 6.8vw, 28px);
-    letter-spacing: -1.4px;
+    margin: 0 0 5px;
+    font-size: clamp(26px, 7.5vw, 34px);
+    letter-spacing: -1.7px;
   }
 
   .role-card > span:not(.role-number) {
-    font-size: 11px;
+    font-size: clamp(11px, 3.2vw, 14px);
   }
 
   .role-number {
-    top: 14px;
-    left: 20px;
-    font-size: 10px;
+    top: clamp(16px, 2.5vh, 22px);
+    left: clamp(20px, 5vw, 28px);
+    font-size: clamp(10px, 3vw, 13px);
   }
 
   .role-card b {
-    right: 18px;
-    bottom: 13px;
-    font-size: 24px;
+    right: clamp(20px, 5vw, 28px);
+    bottom: clamp(17px, 2.6vh, 24px);
+    font-size: clamp(26px, 8vw, 36px);
   }
 
   .rules-strip {
     gap: 6px;
-    margin-top: 10px;
+    flex: 0 0 auto;
+    margin-top: clamp(10px, 1.7vh, 16px);
     overflow-x: visible;
-    font-size: 10px;
+    font-size: clamp(10px, 2.8vw, 12px);
   }
 
   .rules-strip span {
     flex: 1 1 0;
-    padding: 7px 4px;
+    padding: clamp(7px, 1.3vh, 10px) 4px;
     text-align: center;
     white-space: nowrap;
   }
@@ -838,202 +913,265 @@ button:disabled {
   }
 
   .screen-heading {
+    flex: 0 0 auto;
     align-items: center;
-    margin: 5px 0 12px;
+    margin: clamp(2px, 0.7vh, 6px) 0 clamp(12px, 1.8vh, 18px);
   }
 
   .screen-heading h2,
   .name-dialog h2,
   .winner-card h2 {
     margin-top: 4px;
-    font-size: clamp(25px, 8vw, 34px);
-    letter-spacing: -2px;
+    font-size: clamp(30px, 9.5vw, 42px);
+    letter-spacing: -2.4px;
   }
 
   .exit-button {
-    padding: 7px 12px;
-    font-size: 11px;
-  }
-
-  .host-status {
-    display: block;
-    margin-bottom: 10px;
-    padding: 10px 12px;
-    border-radius: 14px;
+    padding: 9px 14px;
     font-size: 12px;
   }
 
-  .host-status p {
-    margin-top: 3px;
-    font-size: 10px;
-    line-height: 1.25;
+  .host-status {
+    flex: 0 0 auto;
+    display: block;
+    margin-bottom: clamp(10px, 1.6vh, 15px);
+    padding: clamp(11px, 1.8vh, 15px) 14px;
+    border-radius: 16px;
+    font-size: clamp(12px, 3.4vw, 14px);
   }
 
-  .host-cards {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+  .host-status p {
+    margin-top: 4px;
+    font-size: clamp(9px, 2.7vw, 11px);
+    line-height: 1.35;
+  }
+
+  .host-screen .host-cards {
+    flex: 1 1 auto;
+    min-height: 0;
+    grid-template-columns: 1fr;
+    grid-auto-rows: minmax(0, 1fr);
+    gap: clamp(8px, 1.3vh, 12px);
   }
 
   .host-player-card {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
     border-width: 2px;
-    border-radius: 16px;
-    box-shadow: 4px 4px 0 var(--yellow);
+    border-radius: 20px;
+    box-shadow: 5px 5px 0 var(--yellow);
   }
 
   .host-controls {
+    flex: 0 0 auto;
     gap: 8px;
-    margin-top: 12px;
+    margin-top: clamp(12px, 1.8vh, 18px);
   }
 
   .host-controls button,
   .primary-button {
-    padding: 10px 12px;
-    font-size: 11px;
+    min-height: 46px;
+    padding: 11px 14px;
+    font-size: clamp(11px, 3.2vw, 13px);
   }
 
   .score-row {
-    grid-template-columns: 22px auto 1fr auto;
-    gap: 8px;
-    min-height: 70px;
-    padding: 7px 10px;
+    grid-template-columns: 22px auto minmax(0, 1fr) auto;
+    gap: clamp(8px, 2.8vw, 13px);
+    min-height: 0;
+    padding: clamp(10px, 2vh, 16px) clamp(10px, 3.4vw, 16px);
     border-width: 2px;
-    border-radius: 15px;
-    box-shadow: 4px 4px 0 var(--yellow);
+    border-radius: 18px;
+    box-shadow: 5px 5px 0 var(--yellow);
   }
 
-  .scoreboard,
-  .host-cards {
-    gap: 8px;
+  .scoreboard {
+    gap: clamp(8px, 1.4vh, 12px);
+  }
+
+  .player-screen .scoreboard {
+    flex: 0 1 clamp(160px, 25vh, 220px);
+    min-height: 0;
+    grid-auto-rows: minmax(0, 1fr);
+  }
+
+  .spectator-screen .scoreboard {
+    flex: 1 1 auto;
+    min-height: 0;
+    grid-auto-rows: minmax(0, 1fr);
   }
 
   .place {
-    font-size: 10px;
+    font-size: clamp(10px, 3vw, 13px);
   }
 
   .avatar {
-    width: 42px;
-    height: 42px;
+    width: clamp(50px, 14vw, 66px);
+    height: clamp(50px, 14vw, 66px);
     border-width: 2px;
   }
 
   .avatar.is-large {
-    width: 40px;
-    height: 40px;
+    width: clamp(68px, 19vw, 88px);
+    height: clamp(68px, 19vw, 88px);
   }
 
   .score-name strong,
   .host-player-main h3 {
     overflow: hidden;
-    font-size: clamp(14px, 4.5vw, 18px);
-    letter-spacing: -0.7px;
+    font-size: clamp(18px, 5.5vw, 24px);
+    letter-spacing: -1px;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
   .score-name span {
-    font-size: 8px;
+    font-size: clamp(8px, 2.5vw, 10px);
   }
 
   .score-value {
-    min-width: 36px;
+    min-width: 44px;
   }
 
   .score-value strong {
-    font-size: clamp(28px, 9vw, 38px);
+    font-size: clamp(38px, 12vw, 52px);
   }
 
   .host-player-main {
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: 7px;
-    min-height: 72px;
-    padding: 14px 9px 8px;
-  }
-
-  .host-player-main .score-value {
-    grid-column: 1 / -1;
-    text-align: left;
+    flex: 1 1 auto;
+    min-height: 0;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: clamp(10px, 3vw, 16px);
+    padding: clamp(16px, 3vh, 26px) clamp(13px, 4vw, 22px);
   }
 
   .host-player-main .score-value strong {
-    font-size: 27px;
+    font-size: clamp(42px, 13vw, 58px);
   }
 
   .remove-player {
-    top: 2px;
-    right: 5px;
-    font-size: 19px;
+    top: 4px;
+    right: 7px;
+    font-size: 22px;
+  }
+
+  .score-actions {
+    flex: 0 0 auto;
   }
 
   .score-actions button {
-    min-height: 50px;
-    font-size: clamp(20px, 7vw, 28px);
+    min-height: clamp(68px, 9vh, 88px);
+    font-size: clamp(28px, 9vw, 40px);
   }
 
   .score-actions small {
-    font-size: 7px;
+    font-size: clamp(7px, 2.1vw, 9px);
   }
 
   .waveform {
-    height: 58px;
-    gap: 4px;
-    margin: 10px 0;
+    flex: 0 0 clamp(76px, 11vh, 104px);
+    height: auto;
+    gap: clamp(3px, 1.2vw, 5px);
+    margin: clamp(8px, 1.5vh, 14px) 0;
   }
 
   .waveform i {
-    max-height: 45px;
+    max-height: clamp(58px, 9vh, 82px);
   }
 
   .buzzer-wrap {
-    padding: 4px 0 16px;
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: clamp(5px, 1vh, 10px) 0 clamp(12px, 2vh, 20px);
   }
 
   .buzzer {
-    width: min(270px, 70vw);
-    border-width: 7px;
-    border-radius: 34px;
-    box-shadow: 0 8px 0 #720c0a, 0 16px 35px rgba(0, 0, 0, 0.35);
+    width: min(100%, 420px);
+    height: min(100%, 360px);
+    min-height: clamp(210px, 29vh, 280px);
+    aspect-ratio: auto;
+    border-width: clamp(8px, 2.5vw, 11px);
+    border-radius: clamp(38px, 11vw, 54px);
+    box-shadow: 0 10px 0 #720c0a, 0 20px 42px rgba(0, 0, 0, 0.38);
   }
 
   .buzzer-hand {
-    font-size: 42px;
+    font-size: clamp(62px, 19vw, 88px);
   }
 
   .buzzer strong {
-    font-size: 12px;
+    font-size: clamp(14px, 4vw, 18px);
   }
 
   .queue-banner {
-    margin-bottom: 10px;
-    padding: 10px 12px;
-    border-radius: 14px;
+    flex: 0 0 auto;
+    margin-bottom: clamp(10px, 1.6vh, 15px);
+    padding: clamp(12px, 2vh, 17px) 14px;
+    border-radius: 16px;
   }
 
   .queue-banner strong {
-    font-size: 25px;
+    font-size: clamp(30px, 9vw, 42px);
   }
 
   .queue-banner p {
-    font-size: 10px;
+    font-size: clamp(10px, 2.8vw, 12px);
     line-height: 1.3;
   }
 
   .empty-players {
-    min-height: 130px;
+    min-height: 0;
+    height: 100%;
     padding: 16px;
   }
 
   .empty-players span {
-    font-size: 32px;
+    font-size: clamp(42px, 14vw, 60px);
+  }
+
+  .modal-backdrop {
+    padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
   }
 
   .name-dialog {
-    padding: 20px;
+    height: min(680px, 100%);
+    display: flex;
+    flex-direction: column;
+    padding: clamp(20px, 6vw, 28px);
+  }
+
+  .name-dialog p {
+    font-size: clamp(12px, 3.4vw, 14px);
+  }
+
+  .name-preview {
+    flex: 1 1 auto;
+    min-height: 0;
+    gap: clamp(15px, 5vw, 22px);
+    margin: clamp(12px, 2vh, 18px) 0 8px;
+    padding: clamp(14px, 4vw, 18px);
+  }
+
+  .name-preview > img,
+  .name-preview > span {
+    width: clamp(100px, 31vw, 132px);
+    height: clamp(100px, 31vw, 132px);
+  }
+
+  .name-preview > span {
+    font-size: clamp(42px, 13vw, 58px);
+  }
+
+  .name-preview strong {
+    font-size: clamp(62px, 20vw, 86px);
   }
 
   .name-dialog input {
-    margin: 8px 0;
-    padding: 12px;
-    font-size: 17px;
+    flex: 0 0 auto;
+    margin: 10px 0;
+    padding: 14px;
+    font-size: clamp(18px, 5vw, 21px);
   }
 
   .winner-card {
@@ -1047,8 +1185,21 @@ button:disabled {
 }
 
 @media (max-width: 370px), (max-height: 680px) {
+  .app-shell {
+    height: auto;
+    min-height: 100dvh;
+    overflow-y: auto;
+  }
+
   .topbar {
     margin-bottom: 6px;
+  }
+
+  .role-screen,
+  .game-screen {
+    flex: none;
+    min-height: auto;
+    overflow: visible;
   }
 
   .role-screen h1 {
@@ -1060,6 +1211,8 @@ button:disabled {
   }
 
   .role-grid {
+    flex: none;
+    grid-template-rows: none;
     gap: 7px;
     margin-top: 10px;
   }
@@ -1073,31 +1226,57 @@ button:disabled {
   }
 
   .host-cards {
-    grid-template-columns: 1fr;
+    flex: none !important;
+    grid-auto-rows: auto !important;
   }
 
   .host-player-main {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    min-height: auto;
+    flex: none;
+    min-height: 72px;
     padding: 9px 12px;
   }
 
-  .host-player-main .score-value {
-    grid-column: auto;
-    text-align: right;
+  .avatar.is-large {
+    width: 48px;
+    height: 48px;
   }
 
   .score-actions button {
     min-height: 42px;
   }
 
+  .player-screen .scoreboard,
+  .spectator-screen .scoreboard {
+    flex: none;
+    grid-auto-rows: auto;
+  }
+
+  .score-row {
+    min-height: 68px;
+  }
+
   .waveform {
+    flex: none;
     height: 44px;
     margin: 6px 0;
   }
 
+  .buzzer-wrap {
+    flex: none;
+  }
+
   .buzzer {
-    width: min(220px, 64vw);
+    width: min(250px, 70vw);
+    height: 170px;
+    min-height: 170px;
+  }
+
+  .name-dialog {
+    height: auto;
+  }
+
+  .name-preview {
+    display: none;
   }
 }
 
