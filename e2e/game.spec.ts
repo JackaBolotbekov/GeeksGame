@@ -1,4 +1,12 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+async function expectNoVerticalScroll(page: Page) {
+  const dimensions = await page.evaluate(() => ({
+    viewportHeight: window.innerHeight,
+    contentHeight: document.documentElement.scrollHeight,
+  }));
+  expect(dimensions.contentHeight).toBeLessThanOrEqual(dimensions.viewportHeight + 1);
+}
 
 test("host and two players can run a scoring round", async ({ browser }) => {
   const hostContext = await browser.newContext();
@@ -32,4 +40,52 @@ test("host and two players can run a scoring round", async ({ browser }) => {
   await hostContext.close();
   await firstContext.close();
   await secondContext.close();
+});
+
+test("standard mobile screens fit without vertical scrolling", async ({ browser }) => {
+  const contextOptions = { viewport: { width: 390, height: 844 } };
+  const hostContext = await browser.newContext(contextOptions);
+  const firstContext = await browser.newContext(contextOptions);
+  const secondContext = await browser.newContext(contextOptions);
+  const spectatorContext = await browser.newContext(contextOptions);
+  const host = await hostContext.newPage();
+  const first = await firstContext.newPage();
+  const second = await secondContext.newPage();
+  const spectator = await spectatorContext.newPage();
+
+  await host.goto("/");
+  await expectNoVerticalScroll(host);
+  await expect.poll(() => host.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue("-webkit-tap-highlight-color"),
+  )).toBe("rgba(0, 0, 0, 0)");
+
+  await host.locator(".role-host").click();
+  await expect(host.locator(".game-screen")).toBeVisible();
+  await expectNoVerticalScroll(host);
+
+  await first.goto("/");
+  await first.locator(".role-player").click();
+  await first.locator(".name-dialog input").fill("Choko");
+  await first.locator(".primary-button").click();
+  await expect(first.locator(".buzzer")).toBeVisible();
+  await expectNoVerticalScroll(first);
+
+  await second.goto("/");
+  await second.locator(".role-player").click();
+  await second.locator(".name-dialog input").fill("Meder");
+  await second.locator(".primary-button").click();
+  await expect(host.locator(".host-player-card")).toHaveCount(2);
+  await expectNoVerticalScroll(host);
+
+  await spectator.goto("/");
+  await spectator.locator(".role-player").click();
+  await spectator.locator(".name-dialog input").fill("Viewer");
+  await spectator.locator(".primary-button").click();
+  await expect(spectator.locator(".queue-banner")).toBeVisible();
+  await expectNoVerticalScroll(spectator);
+
+  await hostContext.close();
+  await firstContext.close();
+  await secondContext.close();
+  await spectatorContext.close();
 });

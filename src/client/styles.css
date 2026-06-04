@@ -16,12 +16,14 @@
 
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  min-height: 100dvh;
   background:
     radial-gradient(circle at 10% 20%, rgba(255, 226, 41, 0.08), transparent 28rem),
     #1c1d22;
@@ -34,6 +36,15 @@ input {
 
 button {
   cursor: pointer;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid var(--yellow);
+  outline-offset: 3px;
 }
 
 button:disabled {
@@ -44,6 +55,7 @@ button:disabled {
 .app-shell {
   position: relative;
   min-height: 100vh;
+  min-height: 100dvh;
   overflow: hidden;
   padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(22px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
 }
@@ -720,77 +732,372 @@ button:disabled {
 
 @media (max-width: 760px) {
   .app-shell {
-    padding-inline: 12px;
+    padding:
+      max(10px, env(safe-area-inset-top))
+      max(12px, env(safe-area-inset-right))
+      max(12px, env(safe-area-inset-bottom))
+      max(12px, env(safe-area-inset-left));
   }
 
   .topbar {
-    margin-bottom: 18px;
+    margin-bottom: 10px;
+  }
+
+  .brand {
+    gap: 8px;
+    font-size: 15px;
+  }
+
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px 2px 9px 2px;
+    font-size: 14px;
+  }
+
+  .connection {
+    gap: 5px;
+    font-size: 10px;
   }
 
   .role-screen {
-    padding-top: 24px;
+    padding-top: clamp(2px, 1.5vh, 12px);
+  }
+
+  .eyebrow,
+  .micro-label {
+    font-size: 9px;
+    letter-spacing: 1.3px;
   }
 
   .role-screen h1 {
-    letter-spacing: -3px;
+    margin: 7px 0 10px;
+    font-size: clamp(39px, 12.5vw, 52px);
+    line-height: 0.93;
+    letter-spacing: -2.7px;
   }
 
-  .role-grid,
-  .host-cards {
+  .lead {
+    margin: 0;
+    font-size: clamp(13px, 4vw, 16px);
+    line-height: 1.4;
+  }
+
+  .role-grid {
     grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: clamp(14px, 2.5vh, 22px);
   }
 
   .role-card {
-    min-height: 160px;
+    min-height: 125px;
+    padding: 18px 20px;
+    border-radius: 20px;
   }
 
   .role-card strong {
-    margin-top: 40px;
+    max-width: 84%;
+    margin: 34px 0 4px;
+    font-size: clamp(21px, 6.8vw, 28px);
+    letter-spacing: -1.4px;
+  }
+
+  .role-card > span:not(.role-number) {
+    font-size: 11px;
+  }
+
+  .role-number {
+    top: 14px;
+    left: 20px;
+    font-size: 10px;
+  }
+
+  .role-card b {
+    right: 18px;
+    bottom: 13px;
+    font-size: 24px;
   }
 
   .rules-strip {
-    overflow-x: auto;
+    gap: 6px;
+    margin-top: 10px;
+    overflow-x: visible;
+    font-size: 10px;
   }
 
   .rules-strip span {
-    flex: 0 0 auto;
+    flex: 1 1 0;
+    padding: 7px 4px;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .inline-note {
+    margin: 8px 0 0;
+    font-size: 11px;
+  }
+
+  .screen-heading {
+    align-items: center;
+    margin: 5px 0 12px;
+  }
+
+  .screen-heading h2,
+  .name-dialog h2,
+  .winner-card h2 {
+    margin-top: 4px;
+    font-size: clamp(25px, 8vw, 34px);
+    letter-spacing: -2px;
+  }
+
+  .exit-button {
+    padding: 7px 12px;
+    font-size: 11px;
   }
 
   .host-status {
     display: block;
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    font-size: 12px;
   }
 
   .host-status p {
-    margin-top: 6px;
+    margin-top: 3px;
+    font-size: 10px;
+    line-height: 1.25;
+  }
+
+  .host-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .host-player-card {
+    border-width: 2px;
+    border-radius: 16px;
+    box-shadow: 4px 4px 0 var(--yellow);
   }
 
   .host-controls {
-    display: grid;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .host-controls button,
+  .primary-button {
+    padding: 10px 12px;
+    font-size: 11px;
   }
 
   .score-row {
     grid-template-columns: 22px auto 1fr auto;
-    gap: 9px;
-    padding-inline: 11px;
+    gap: 8px;
+    min-height: 70px;
+    padding: 7px 10px;
+    border-width: 2px;
+    border-radius: 15px;
+    box-shadow: 4px 4px 0 var(--yellow);
+  }
+
+  .scoreboard,
+  .host-cards {
+    gap: 8px;
+  }
+
+  .place {
+    font-size: 10px;
   }
 
   .avatar {
-    width: 48px;
-    height: 48px;
+    width: 42px;
+    height: 42px;
+    border-width: 2px;
   }
 
   .avatar.is-large {
-    width: 62px;
-    height: 62px;
+    width: 40px;
+    height: 40px;
+  }
+
+  .score-name strong,
+  .host-player-main h3 {
+    overflow: hidden;
+    font-size: clamp(14px, 4.5vw, 18px);
+    letter-spacing: -0.7px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .score-name span {
+    font-size: 8px;
+  }
+
+  .score-value {
+    min-width: 36px;
+  }
+
+  .score-value strong {
+    font-size: clamp(28px, 9vw, 38px);
   }
 
   .host-player-main {
-    padding: 18px 14px;
-    gap: 10px;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 7px;
+    min-height: 72px;
+    padding: 14px 9px 8px;
+  }
+
+  .host-player-main .score-value {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+
+  .host-player-main .score-value strong {
+    font-size: 27px;
+  }
+
+  .remove-player {
+    top: 2px;
+    right: 5px;
+    font-size: 19px;
   }
 
   .score-actions button {
-    min-height: 76px;
+    min-height: 50px;
+    font-size: clamp(20px, 7vw, 28px);
+  }
+
+  .score-actions small {
+    font-size: 7px;
+  }
+
+  .waveform {
+    height: 58px;
+    gap: 4px;
+    margin: 10px 0;
+  }
+
+  .waveform i {
+    max-height: 45px;
+  }
+
+  .buzzer-wrap {
+    padding: 4px 0 16px;
+  }
+
+  .buzzer {
+    width: min(270px, 70vw);
+    border-width: 7px;
+    border-radius: 34px;
+    box-shadow: 0 8px 0 #720c0a, 0 16px 35px rgba(0, 0, 0, 0.35);
+  }
+
+  .buzzer-hand {
+    font-size: 42px;
+  }
+
+  .buzzer strong {
+    font-size: 12px;
+  }
+
+  .queue-banner {
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border-radius: 14px;
+  }
+
+  .queue-banner strong {
+    font-size: 25px;
+  }
+
+  .queue-banner p {
+    font-size: 10px;
+    line-height: 1.3;
+  }
+
+  .empty-players {
+    min-height: 130px;
+    padding: 16px;
+  }
+
+  .empty-players span {
+    font-size: 32px;
+  }
+
+  .name-dialog {
+    padding: 20px;
+  }
+
+  .name-dialog input {
+    margin: 8px 0;
+    padding: 12px;
+    font-size: 17px;
+  }
+
+  .winner-card {
+    padding: 28px 18px;
+  }
+
+  .winner-crown {
+    margin-bottom: 10px;
+    font-size: 48px;
+  }
+}
+
+@media (max-width: 370px), (max-height: 680px) {
+  .topbar {
+    margin-bottom: 6px;
+  }
+
+  .role-screen h1 {
+    font-size: 36px;
+  }
+
+  .lead {
+    font-size: 12px;
+  }
+
+  .role-grid {
+    gap: 7px;
+    margin-top: 10px;
+  }
+
+  .role-card {
+    min-height: 108px;
+  }
+
+  .rules-strip {
+    margin-top: 7px;
+  }
+
+  .host-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .host-player-main {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    min-height: auto;
+    padding: 9px 12px;
+  }
+
+  .host-player-main .score-value {
+    grid-column: auto;
+    text-align: right;
+  }
+
+  .score-actions button {
+    min-height: 42px;
+  }
+
+  .waveform {
+    height: 44px;
+    margin: 6px 0;
+  }
+
+  .buzzer {
+    width: min(220px, 64vw);
   }
 }
 
