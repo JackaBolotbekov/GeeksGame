@@ -2,8 +2,10 @@ import type {
   ActionResult,
   ClaimableRole,
   GameState,
+  MusicPlayback,
   SessionIdentity,
   ViewerRole,
+  YouTubeTrack,
 } from "../shared/types";
 
 interface Participant {
@@ -16,6 +18,7 @@ interface Participant {
 
 const ok = (): ActionResult => ({ ok: true });
 const fail = (message: string): ActionResult => ({ ok: false, message });
+const ANSWER_WINDOW_MS = 10_000;
 
 export class GameRoom {
   private hostSocketId: string | null = null;
@@ -26,6 +29,9 @@ export class GameRoom {
   private round = 1;
   private scoreEvent: GameState["scoreEvent"] = null;
   private scoreEventId = 0;
+  private track: YouTubeTrack | null = null;
+  private musicPlayback: MusicPlayback = "idle";
+  private answerAttempt: GameState["answerAttempt"] = null;
 
   claim(socketId: string, identity: SessionIdentity | null, role: ClaimableRole): ActionResult {
     if (role === "host") {
@@ -61,12 +67,18 @@ export class GameRoom {
   }
 
   release(socketId: string): ActionResult {
-    if (this.hostSocketId === socketId) this.hostSocketId = null;
+    if (this.hostSocketId === socketId) {
+      this.hostSocketId = null;
+      this.track = null;
+      this.musicPlayback = "idle";
+      this.clearAnswerAttempt();
+    }
     const playerIndex = this.players.findIndex((player) => player.socketId === socketId);
     if (playerIndex >= 0) {
       const [removed] = this.players.splice(playerIndex, 1);
       if (removed.userId === this.buzzerUserId) this.buzzerUserId = null;
       if (removed.userId === this.winnerUserId) this.winnerUserId = null;
+      if (removed.userId === this.answerAttempt?.userId) this.clearAnswerAttempt();
       this.promoteQueue();
     }
     this.queue = this.queue.filter((participant) => participant.socketId !== socketId);
@@ -79,10 +91,11 @@ export class GameRoom {
 
   pressBuzzer(socketId: string): ActionResult {
     if (this.winnerUserId) return fail("Матч завершён");
-    if (this.buzzerUserId) return fail("Кнопка уже нажата");
+    if (this.answerAttempt) return fail("Сейчас отвечает другой игрок");
     const player = this.players.find((participant) => participant.socketId === socketId);
     if (!player) return fail("Только активный игрок может нажать кнопку");
     this.buzzerUserId = player.userId;
+    this.answerAttempt = this.createAnswerAttempt(player.userId, 1, []);
     return ok();
   }
 
@@ -91,11 +104,28 @@ export class GameRoom {
     if (this.winnerUserId) return fail("Сначала сбросьте завершённый матч");
     const player = this.players.find((participant) => participant.userId === userId);
     if (!player) return fail("Игрок не найден");
+    if (this.answerAttempt && this.answerAttempt.userId !== userId) {
+      return fail("Сейчас отвечает другой игрок");
+    }
 
     player.score = delta === 1 ? player.score + 1 : Math.max(0, player.score - 1);
     this.scoreEvent = { id: ++this.scoreEventId, userId, delta };
     this.players.sort((left, right) => right.score - left.score);
     if (player.score >= 10) this.winnerUserId = player.userId;
+    if (this.winnerUserId || delta === 1 || !this.answerAttempt) {
+      this.nextRoundInternal();
+      return ok();
+    }
+
+    if (this.answerAttempt.attemptNumber === 1) {
+      const nextPlayer = this.players.find((participant) => participant.userId !== userId);
+      if (nextPlayer) {
+        this.buzzerUserId = nextPlayer.userId;
+        this.answerAttempt = this.createAnswerAttempt(nextPlayer.userId, 2, [userId]);
+        return ok();
+      }
+    }
+
     this.nextRoundInternal();
     return ok();
   }
@@ -115,6 +145,9 @@ export class GameRoom {
     this.buzzerUserId = null;
     this.winnerUserId = null;
     this.scoreEvent = null;
+    this.track = null;
+    this.musicPlayback = "idle";
+    this.clearAnswerAttempt();
     this.round = 1;
     return ok();
   }
@@ -125,6 +158,24 @@ export class GameRoom {
     if (!player) return fail("Игрок не найден");
     this.release(player.socketId);
     return ok();
+  }
+
+  selectTrack(socketId: string, track: YouTubeTrack): ActionResult {
+    if (!this.isHost(socketId)) return fail("Только ведущий выбирает песню");
+    this.track = track;
+    this.musicPlayback = "idle";
+    this.clearAnswerAttempt();
+    return ok();
+  }
+
+  setMusicPlayback(socketId: string, playback: MusicPlayback): ActionResult {
+    if (!this.isHost(socketId)) return fail("Только ведущий управляет музыкой");
+    this.musicPlayback = playback;
+    return ok();
+  }
+
+  isHostSocket(socketId: string): boolean {
+    return this.isHost(socketId);
   }
 
   getState(socketId: string): GameState {
@@ -141,6 +192,10 @@ export class GameRoom {
         avatarUrl: player.avatarUrl,
         score: player.score,
         isBuzzed: player.userId === this.buzzerUserId,
+        isAnswering: player.userId === this.answerAttempt?.userId,
+        hasAttemptedThisRound:
+          player.userId === this.answerAttempt?.userId ||
+          Boolean(this.answerAttempt?.previousWrongUserIds.includes(player.userId)),
       })),
       viewer: {
         role,
@@ -152,6 +207,9 @@ export class GameRoom {
       winnerUserId: this.winnerUserId,
       round: this.round,
       scoreEvent: this.scoreEvent,
+      track: this.track,
+      musicPlayback: this.musicPlayback,
+      answerAttempt: this.answerAttempt,
     };
   }
 
@@ -167,7 +225,8 @@ export class GameRoom {
   }
 
   private nextRoundInternal(): void {
-    this.buzzerUserId = null;
+    this.clearAnswerAttempt();
+    this.musicPlayback = "idle";
     this.round += 1;
   }
 
@@ -178,5 +237,25 @@ export class GameRoom {
       this.players.push(next);
       this.players.sort((left, right) => right.score - left.score);
     }
+  }
+
+  private createAnswerAttempt(
+    userId: string,
+    attemptNumber: 1 | 2,
+    previousWrongUserIds: string[],
+  ): NonNullable<GameState["answerAttempt"]> {
+    const startedAt = Date.now();
+    return {
+      userId,
+      attemptNumber,
+      previousWrongUserIds,
+      startedAt,
+      deadlineAt: startedAt + ANSWER_WINDOW_MS,
+    };
+  }
+
+  private clearAnswerAttempt(): void {
+    this.buzzerUserId = null;
+    this.answerAttempt = null;
   }
 }

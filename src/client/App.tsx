@@ -1,11 +1,12 @@
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import type { AuthResponse, GameState, PlayerView } from "../shared/types";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import type { AuthResponse, GameState, MusicPlayback, PlayerView, YouTubeTrack } from "../shared/types";
 import { useGameSocket } from "./use-game-socket";
 
 interface AppConfig {
   telegramConfigured: boolean;
   devAuth: boolean;
+  youtubeConfigured: boolean;
 }
 
 interface ProfileState {
@@ -34,13 +35,127 @@ function haptic(type: "success" | "error" | "light" | "heavy"): void {
   else feedback.impactOccurred(type);
 }
 
+const SHOUT_DB_NAME = "geeksgame-shout";
+const SHOUT_STORE_NAME = "clips";
+const SHOUT_KEY = "player-shout";
+let youtubeApiPromise: Promise<void> | null = null;
+
+function openShoutDb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(SHOUT_DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      request.result.createObjectStore(SHOUT_STORE_NAME);
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+async function loadShoutBlob(): Promise<Blob | null> {
+  if (!("indexedDB" in window)) return null;
+  const db = await openShoutDb();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(SHOUT_STORE_NAME, "readonly");
+    const request = transaction.objectStore(SHOUT_STORE_NAME).get(SHOUT_KEY);
+    request.onsuccess = () => resolve(request.result instanceof Blob ? request.result : null);
+    request.onerror = () => reject(request.error);
+    transaction.oncomplete = () => db.close();
+  });
+}
+
+async function saveShoutBlob(blob: Blob): Promise<void> {
+  const db = await openShoutDb();
+  await new Promise<void>((resolve, reject) => {
+    const transaction = db.transaction(SHOUT_STORE_NAME, "readwrite");
+    transaction.objectStore(SHOUT_STORE_NAME).put(blob, SHOUT_KEY);
+    transaction.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    transaction.onerror = () => reject(transaction.error);
+  });
+}
+
+async function deleteShoutBlob(): Promise<void> {
+  const db = await openShoutDb();
+  await new Promise<void>((resolve, reject) => {
+    const transaction = db.transaction(SHOUT_STORE_NAME, "readwrite");
+    transaction.objectStore(SHOUT_STORE_NAME).delete(SHOUT_KEY);
+    transaction.oncomplete = () => {
+      db.close();
+      resolve();
+    };
+    transaction.onerror = () => reject(transaction.error);
+  });
+}
+
+function playFallbackShout(): void {
+  try {
+    const AudioContext = window.AudioContext ?? window.webkitAudioContext;
+    if (!AudioContext) return;
+    const context = new AudioContext();
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.type = "square";
+    oscillator.frequency.setValueAtTime(520, context.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(780, context.currentTime + 0.12);
+    gain.gain.setValueAtTime(0.001, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.35, context.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.28);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start();
+    oscillator.stop(context.currentTime + 0.3);
+  } catch {
+    // Some Telegram WebViews can block WebAudio; haptics still gives feedback.
+  }
+}
+
+async function playStoredShout(): Promise<void> {
+  try {
+    const blob = await loadShoutBlob();
+    if (!blob) {
+      playFallbackShout();
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.onended = () => URL.revokeObjectURL(url);
+    await audio.play();
+  } catch {
+    playFallbackShout();
+  }
+}
+
+function loadYouTubeIframeApi(): Promise<void> {
+  if (window.YT?.Player) return Promise.resolve();
+  if (youtubeApiPromise) return youtubeApiPromise;
+  youtubeApiPromise = new Promise((resolve) => {
+    const previousCallback = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      previousCallback?.();
+      resolve();
+    };
+    const script = document.createElement("script");
+    script.src = "https://www.youtube.com/iframe_api";
+    script.async = true;
+    document.head.append(script);
+  });
+  return youtubeApiPromise;
+}
+
 export function App() {
-  const [config, setConfig] = useState<AppConfig>({ telegramConfigured: false, devAuth: false });
+  const [config, setConfig] = useState<AppConfig>({
+    telegramConfigured: false,
+    devAuth: false,
+    youtubeConfigured: false,
+  });
   const [sessionToken, setSessionToken] = useState<string | null>(null);
   const [profile, setProfile] = useState<ProfileState | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
   const [nameMode, setNameMode] = useState<"first" | "edit" | "dev" | null>(null);
+  const [shoutSettingsOpen, setShoutSettingsOpen] = useState(false);
   const [pendingPlayerClaim, setPendingPlayerClaim] = useState(false);
   const game = useGameSocket(sessionToken);
   const claimRole = game.claim;
@@ -122,6 +237,10 @@ export function App() {
     haptic("light");
   };
 
+  const playShout = useCallback(async () => {
+    await playStoredShout();
+  }, []);
+
   return (
     <main className="app-shell">
       <div className="ambient ambient-one" />
@@ -130,6 +249,7 @@ export function App() {
         connected={game.connected}
         profile={profile}
         onEditProfile={() => setNameMode("edit")}
+        onShoutSettings={() => setShoutSettingsOpen(true)}
       />
 
       <AnimatePresence mode="wait">
@@ -144,9 +264,21 @@ export function App() {
             onPlayer={claimPlayer}
           />
         ) : game.state.viewer.role === "host" ? (
-          <HostScreen key="host" state={game.state} game={game} onRelease={release} />
+          <HostScreen
+            key="host"
+            state={game.state}
+            game={game}
+            youtubeConfigured={config.youtubeConfigured}
+            onRelease={release}
+          />
         ) : game.state.viewer.role === "player" ? (
-          <PlayerScreen key="player" state={game.state} game={game} onRelease={release} />
+          <PlayerScreen
+            key="player"
+            state={game.state}
+            game={game}
+            onRelease={release}
+            onBuzzSuccess={playShout}
+          />
         ) : (
           <SpectatorScreen key="spectator" state={game.state} onRelease={release} />
         )}
@@ -164,6 +296,9 @@ export function App() {
             }}
             onSubmit={submitName}
           />
+        ) : null}
+        {shoutSettingsOpen ? (
+          <ShoutDialog key="shout-dialog" onClose={() => setShoutSettingsOpen(false)} />
         ) : null}
         {game.message || authError ? (
           <Toast
@@ -184,10 +319,12 @@ function Header({
   connected,
   profile,
   onEditProfile,
+  onShoutSettings,
 }: {
   connected: boolean;
   profile: ProfileState | null;
   onEditProfile: () => void;
+  onShoutSettings: () => void;
 }) {
   return (
     <header className="topbar">
@@ -203,6 +340,11 @@ function Header({
         {profile?.kind === "telegram" && profile.displayName ? (
           <button className="icon-button" onClick={onEditProfile} aria-label="Изменить имя">
             ✎
+          </button>
+        ) : null}
+        {profile?.displayName ? (
+          <button className="icon-button" onClick={onShoutSettings} aria-label="Мой выкрик">
+            🔊
           </button>
         ) : null}
       </div>
@@ -264,12 +406,36 @@ type GameActions = ReturnType<typeof useGameSocket>;
 function HostScreen({
   state,
   game,
+  youtubeConfigured,
   onRelease,
 }: {
   state: GameState;
   game: GameActions;
+  youtubeConfigured: boolean;
   onRelease: () => void;
 }) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<YouTubeTrack[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [searchMessage, setSearchMessage] = useState<string | null>(null);
+  const setMusicState = game.setMusicState;
+  const handleMusicState = useCallback((playback: MusicPlayback) => {
+    void setMusicState(playback);
+  }, [setMusicState]);
+  const searchTracks = async (event: FormEvent) => {
+    event.preventDefault();
+    setSearching(true);
+    setSearchMessage(null);
+    const response = await game.youtubeSearch(query);
+    setSearching(false);
+    if (response.ok) {
+      setResults(response.results ?? []);
+      if (!response.results?.length) setSearchMessage("Ничего не нашли");
+    } else {
+      setSearchMessage(response.message ?? "Не удалось найти песню");
+    }
+  };
+
   return (
     <ScreenFrame
       variant="host"
@@ -277,11 +443,31 @@ function HostScreen({
       title={state.winnerUserId ? "Матч завершён" : `Раунд ${state.round}`}
       onRelease={onRelease}
     >
+      <HostMusicPanel
+        state={state}
+        query={query}
+        results={results}
+        searching={searching}
+        searchMessage={searchMessage}
+        youtubeConfigured={youtubeConfigured}
+        onQueryChange={setQuery}
+        onSearch={searchTracks}
+        onSelectTrack={(track) => {
+          setResults([]);
+          void game.selectTrack(track);
+        }}
+        onMusicState={handleMusicState}
+      />
       <div className="host-status">
-        <span className={state.buzzerUserId ? "status-live" : ""}>
-          {state.buzzerUserId ? "Есть ответ!" : "Ждём первый сигнал"}
+        <span className={state.answerAttempt ? "status-live" : ""}>
+          {state.answerAttempt ? "Есть ответ!" : "Ждём первый сигнал"}
         </span>
-        <p>Нажмите левую или правую часть карточки любого игрока.</p>
+        <p>
+          {state.answerAttempt
+            ? "Музыка на паузе. Оцените ответ активного игрока."
+            : "Нажмите левую или правую часть карточки любого игрока."}
+        </p>
+        <AnswerTimer attempt={state.answerAttempt} />
       </div>
       <div className="host-cards">
         {state.players.length ? state.players.map((player) => (
@@ -290,6 +476,7 @@ function HostScreen({
             player={player}
             scoreEvent={state.scoreEvent}
             winner={state.winnerUserId === player.userId}
+            activeAttemptUserId={state.answerAttempt?.userId ?? null}
             onScore={(delta) => {
               haptic(delta === 1 ? "success" : "heavy");
               void game.score(player.userId, delta);
@@ -320,37 +507,268 @@ function HostScreen({
   );
 }
 
+function HostMusicPanel({
+  state,
+  query,
+  results,
+  searching,
+  searchMessage,
+  youtubeConfigured,
+  onQueryChange,
+  onSearch,
+  onSelectTrack,
+  onMusicState,
+}: {
+  state: GameState;
+  query: string;
+  results: YouTubeTrack[];
+  searching: boolean;
+  searchMessage: string | null;
+  youtubeConfigured: boolean;
+  onQueryChange: (query: string) => void;
+  onSearch: (event: FormEvent) => void;
+  onSelectTrack: (track: YouTubeTrack) => void;
+  onMusicState: (playback: MusicPlayback) => void;
+}) {
+  return (
+    <section className="host-music-panel">
+      <div className="music-player-shell">
+        <YouTubePlayer
+          track={state.track}
+          playback={state.musicPlayback}
+          shouldPause={Boolean(state.answerAttempt)}
+          onPlaybackChange={onMusicState}
+        />
+      </div>
+      <div className="music-search-panel">
+        <form className="music-search" onSubmit={onSearch}>
+          <input
+            value={query}
+            onChange={(event) => onQueryChange(event.target.value)}
+            placeholder={youtubeConfigured ? "Найти песню в YouTube" : "Нужен YOUTUBE_API_KEY"}
+            aria-label="Найти песню в YouTube"
+            disabled={!youtubeConfigured}
+          />
+          <button disabled={!youtubeConfigured || searching || query.trim().length < 2}>
+            {searching ? "Ищем..." : "Найти"}
+          </button>
+        </form>
+        {searchMessage ? <p className="music-search-message">{searchMessage}</p> : null}
+        {results.length ? (
+          <div className="music-results">
+            {results.map((track) => (
+              <button key={track.videoId} onClick={() => onSelectTrack(track)}>
+                {track.thumbnailUrl ? <img src={track.thumbnailUrl} alt="" /> : <span>♪</span>}
+                <strong>{track.title}</strong>
+                <small>{track.channelTitle}</small>
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+type YouTubePlayerInstance = {
+  playVideo(): void;
+  pauseVideo(): void;
+  cueVideoById(videoId: string): void;
+  destroy(): void;
+};
+
+function YouTubePlayer({
+  track,
+  playback,
+  shouldPause,
+  onPlaybackChange,
+}: {
+  track: YouTubeTrack | null;
+  playback: MusicPlayback;
+  shouldPause: boolean;
+  onPlaybackChange: (playback: MusicPlayback) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const playerRef = useRef<YouTubePlayerInstance | null>(null);
+  const [ready, setReady] = useState(false);
+  const videoId = track?.videoId;
+
+  useEffect(() => {
+    if (!videoId || !containerRef.current) return;
+    let cancelled = false;
+    void loadYouTubeIframeApi().then(() => {
+      if (cancelled || !window.YT?.Player || !containerRef.current) return;
+      if (playerRef.current) {
+        playerRef.current.cueVideoById(videoId);
+        setReady(true);
+        return;
+      }
+      playerRef.current = new window.YT.Player(containerRef.current, {
+        videoId,
+        width: "100%",
+        height: "100%",
+        playerVars: {
+          controls: 1,
+          playsinline: 1,
+          rel: 0,
+          origin: window.location.origin,
+        },
+        events: {
+          onReady: () => setReady(true),
+          onStateChange: (event) => {
+            const playerState = window.YT?.PlayerState;
+            if (!playerState) return;
+            if (event.data === playerState.PLAYING) onPlaybackChange("playing");
+            if (event.data === playerState.PAUSED) onPlaybackChange("paused");
+            if (event.data === playerState.ENDED) onPlaybackChange("idle");
+          },
+        },
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [onPlaybackChange, videoId]);
+
+  useEffect(() => {
+    return () => {
+      playerRef.current?.destroy();
+      playerRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (shouldPause && playerRef.current) {
+      playerRef.current.pauseVideo();
+      onPlaybackChange("paused");
+    }
+  }, [onPlaybackChange, shouldPause]);
+
+  return (
+    <div className={`youtube-player-card ${track ? "has-track" : ""}`}>
+      <div className="youtube-frame">
+        {track ? <div ref={containerRef} /> : <div className="youtube-placeholder">Выберите песню</div>}
+      </div>
+      <div className="youtube-controls">
+        <TrackTicker track={track} playback={playback} />
+        <div>
+          <button
+            onClick={() => {
+              playerRef.current?.playVideo();
+              onPlaybackChange("playing");
+            }}
+            disabled={!track || !ready || shouldPause}
+          >
+            Играть
+          </button>
+          <button
+            onClick={() => {
+              playerRef.current?.pauseVideo();
+              onPlaybackChange("paused");
+            }}
+            disabled={!track || !ready}
+          >
+            Пауза
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TrackTicker({ track, playback }: { track: YouTubeTrack | null; playback: MusicPlayback }) {
+  return (
+    <div className="track-ticker">
+      <span className={`music-dot is-${playback}`} />
+      <div>
+        <small>{playback === "playing" ? "играет" : playback === "paused" ? "пауза" : "трек"}</small>
+        <strong>{track ? track.title : "Песня не выбрана"}</strong>
+      </div>
+    </div>
+  );
+}
+
+function AnswerTimer({ attempt }: { attempt: GameState["answerAttempt"] }) {
+  const [now, setNow] = useState(attempt?.startedAt ?? 0);
+  useEffect(() => {
+    if (!attempt) return;
+    const interval = window.setInterval(() => setNow(Date.now()), 250);
+    return () => window.clearInterval(interval);
+  }, [attempt?.startedAt, attempt]);
+  if (!attempt) return null;
+  const displayNow = Math.max(now, attempt.startedAt);
+  const remaining = Math.max(0, Math.ceil((attempt.deadlineAt - displayNow) / 1000));
+  return (
+    <div className="answer-timer" aria-label="Таймер ответа">
+      <strong>{remaining}</strong>
+      <span>сек</span>
+    </div>
+  );
+}
+
+function AnswerBanner({
+  attempt,
+  players,
+  viewerUserId,
+}: {
+  attempt: GameState["answerAttempt"];
+  players: PlayerView[];
+  viewerUserId: string | null;
+}) {
+  if (!attempt) return null;
+  const player = players.find((item) => item.userId === attempt.userId);
+  const isMe = viewerUserId === attempt.userId;
+  return (
+    <div className={`answer-banner ${isMe ? "is-me" : ""}`}>
+      <span>{isMe ? "Твой ответ" : "Отвечает"}</span>
+      <strong>{player?.displayName ?? "Игрок"}</strong>
+      <AnswerTimer attempt={attempt} />
+    </div>
+  );
+}
+
 function HostPlayerCard({
   player,
   scoreEvent,
   winner,
+  activeAttemptUserId,
   onScore,
   onRemove,
 }: {
   player: PlayerView;
   scoreEvent: GameState["scoreEvent"];
   winner: boolean;
+  activeAttemptUserId: string | null;
   onScore: (delta: 1 | -1) => void;
   onRemove: () => void;
 }) {
+  const lockedByAnotherAnswer = Boolean(activeAttemptUserId && activeAttemptUserId !== player.userId);
   return (
     <motion.article
       layout
       transition={{ type: "spring", stiffness: 340, damping: 30 }}
-      className={`host-player-card ${player.isBuzzed ? "is-buzzed" : ""} ${winner ? "is-winner" : ""}`}
+      className={`host-player-card ${player.isBuzzed ? "is-buzzed" : ""} ${winner ? "is-winner" : ""} ${player.isAnswering ? "is-answering" : ""} ${player.hasAttemptedThisRound && !player.isAnswering ? "has-attempted" : ""}`}
     >
       <button className="remove-player" aria-label={`Убрать ${player.displayName}`} onClick={onRemove}>×</button>
       <div className="host-player-main">
         <Avatar player={player} large />
         <div>
-          <span className="micro-label">{player.isBuzzed ? "нажал первым" : winner ? "победитель" : "игрок"}</span>
+          <span className="micro-label">
+            {player.isAnswering
+              ? "отвечает сейчас"
+              : player.hasAttemptedThisRound
+                ? "уже отвечал"
+                : player.isBuzzed
+                  ? "нажал первым"
+                  : winner ? "победитель" : "игрок"}
+          </span>
           <h3>{player.displayName}</h3>
         </div>
         <Score value={player.score} event={scoreEvent?.userId === player.userId ? scoreEvent : null} />
       </div>
       <div className="score-actions">
-        <button className="minus-zone" onClick={() => onScore(-1)} disabled={winner}>−1 <small>ошибка</small></button>
-        <button className="plus-zone" onClick={() => onScore(1)} disabled={winner}>+1 <small>верно</small></button>
+        <button className="minus-zone" onClick={() => onScore(-1)} disabled={winner || lockedByAnotherAnswer}>−1 <small>ошибка</small></button>
+        <button className="plus-zone" onClick={() => onScore(1)} disabled={winner || lockedByAnotherAnswer}>+1 <small>верно</small></button>
       </div>
     </motion.article>
   );
@@ -360,14 +778,24 @@ function PlayerScreen({
   state,
   game,
   onRelease,
+  onBuzzSuccess,
 }: {
   state: GameState;
   game: GameActions;
   onRelease: () => void;
+  onBuzzSuccess: () => Promise<void>;
 }) {
   const me = state.players.find((player) => player.userId === state.viewer.userId);
-  const isLocked = Boolean(state.buzzerUserId || state.winnerUserId);
-  const pressedMe = state.buzzerUserId === state.viewer.userId;
+  const isLocked = Boolean(state.answerAttempt || state.winnerUserId);
+  const pressedMe = state.answerAttempt?.userId === state.viewer.userId;
+  const alreadyAnswered = Boolean(me?.hasAttemptedThisRound && !pressedMe);
+  const buttonLabel = pressedMe
+    ? "Твой ответ!"
+    : alreadyAnswered
+      ? "Уже отвечал"
+      : state.answerAttempt
+        ? "Ждём ответ"
+        : "Знаю ответ";
 
   return (
     <ScreenFrame
@@ -376,20 +804,23 @@ function PlayerScreen({
       title={state.winnerUserId ? "Финиш!" : `Раунд ${state.round}`}
       onRelease={onRelease}
     >
+      <TrackTicker track={state.track} playback={state.musicPlayback} />
       <Scoreboard state={state} />
-      <Waveform active={!isLocked} />
+      <AnswerBanner attempt={state.answerAttempt} players={state.players} viewerUserId={state.viewer.userId} />
+      <Waveform active={state.musicPlayback === "playing" && !isLocked} />
       <div className="buzzer-wrap">
         <motion.button
           className={`buzzer ${pressedMe ? "is-pressed" : ""}`}
           whileTap={{ scale: 0.94 }}
           disabled={isLocked}
-          onClick={() => {
+          onClick={async () => {
             haptic("heavy");
-            void game.buzz();
+            const result = await game.buzz();
+            if (result.ok) await onBuzzSuccess();
           }}
         >
           <span className="buzzer-hand">✋</span>
-          <strong>{pressedMe ? "Ты первый!" : state.buzzerUserId ? "Уже нажали" : "Знаю ответ"}</strong>
+          <strong>{buttonLabel}</strong>
         </motion.button>
       </div>
       <WinnerOverlay state={state} />
@@ -400,13 +831,15 @@ function PlayerScreen({
 function SpectatorScreen({ state, onRelease }: { state: GameState; onRelease: () => void }) {
   return (
     <ScreenFrame variant="spectator" kicker="Режим зрителя" title={`Раунд ${state.round}`} onRelease={onRelease}>
+      <TrackTicker track={state.track} playback={state.musicPlayback} />
       <div className="queue-banner">
         <span>Вы в очереди</span>
         <strong>#{state.viewer.queuePosition}</strong>
         <p>Как только место освободится, вы автоматически станете игроком.</p>
       </div>
       <Scoreboard state={state} />
-      <Waveform active={!state.buzzerUserId && !state.winnerUserId} />
+      <AnswerBanner attempt={state.answerAttempt} players={state.players} viewerUserId={state.viewer.userId} />
+      <Waveform active={state.musicPlayback === "playing" && !state.answerAttempt && !state.winnerUserId} />
       <WinnerOverlay state={state} />
     </ScreenFrame>
   );
@@ -449,7 +882,7 @@ function Scoreboard({ state }: { state: GameState }) {
     <motion.div className="scoreboard" layout>
       {state.players.length ? state.players.map((player, index) => (
         <motion.article
-          className={`score-row ${player.isBuzzed ? "is-buzzed" : ""}`}
+          className={`score-row ${player.isBuzzed ? "is-buzzed" : ""} ${player.isAnswering ? "is-answering" : ""} ${player.hasAttemptedThisRound && !player.isAnswering ? "has-attempted" : ""}`}
           key={player.userId}
           layout
           transition={{ type: "spring", stiffness: 320, damping: 28 }}
@@ -458,7 +891,13 @@ function Scoreboard({ state }: { state: GameState }) {
           <Avatar player={player} />
           <div className="score-name">
             <strong>{player.displayName}</strong>
-            <span>{player.isBuzzed ? "нажал первым" : state.winnerUserId === player.userId ? "победитель" : "в игре"}</span>
+            <span>
+              {player.isAnswering
+                ? "отвечает"
+                : player.hasAttemptedThisRound
+                  ? "уже отвечал"
+                  : state.winnerUserId === player.userId ? "победитель" : "в игре"}
+            </span>
           </div>
           <Score value={player.score} event={state.scoreEvent?.userId === player.userId ? state.scoreEvent : null} />
         </motion.article>
@@ -547,6 +986,116 @@ function WinnerOverlay({ state }: { state: GameState }) {
         </motion.div>
       ) : null}
     </AnimatePresence>
+  );
+}
+
+function ShoutDialog({ onClose }: { onClose: () => void }) {
+  const [recording, setRecording] = useState(false);
+  const [hasSavedShout, setHasSavedShout] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const canRecord =
+    "mediaDevices" in navigator &&
+    "getUserMedia" in navigator.mediaDevices &&
+    "MediaRecorder" in window;
+
+  useEffect(() => {
+    void loadShoutBlob()
+      .then((blob) => setHasSavedShout(Boolean(blob)))
+      .catch(() => setHasSavedShout(false));
+  }, []);
+
+  const stopStream = () => {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+  };
+
+  const startRecording = async () => {
+    if (!canRecord) {
+      setMessage("Запись недоступна в этом браузере");
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      chunksRef.current = [];
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : "audio/webm";
+      const recorder = new MediaRecorder(stream, { mimeType });
+      recorderRef.current = recorder;
+      recorder.ondataavailable = (event) => {
+        if (event.data.size) chunksRef.current.push(event.data);
+      };
+      recorder.onstop = () => {
+        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
+        void saveShoutBlob(blob).then(() => {
+          setHasSavedShout(true);
+          setMessage("Выкрик сохранён на этом телефоне");
+          stopStream();
+        });
+      };
+      recorder.start();
+      setRecording(true);
+      setMessage("Записываем. Скажи коротко и громко.");
+    } catch {
+      setMessage("Не удалось получить доступ к микрофону");
+      stopStream();
+    }
+  };
+
+  const stopRecording = () => {
+    recorderRef.current?.stop();
+    recorderRef.current = null;
+    setRecording(false);
+  };
+
+  const deleteRecording = async () => {
+    await deleteShoutBlob();
+    setHasSavedShout(false);
+    setMessage("Выкрик удалён");
+  };
+
+  return (
+    <motion.div className="modal-backdrop" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+      <motion.div
+        className="name-dialog shout-dialog"
+        initial={{ y: 32, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 32, opacity: 0 }}
+      >
+        <span className="eyebrow">Настройки игрока</span>
+        <h2>Мой выкрик</h2>
+        <p>Запись хранится только на этом телефоне. Если записи нет, сработает стандартный звук.</p>
+        <div className="shout-status">
+          <strong>{hasSavedShout ? "Запись готова" : "Записи пока нет"}</strong>
+          <span>{recording ? "идёт запись" : "локальное хранилище"}</span>
+        </div>
+        {message ? <p className="inline-note">{message}</p> : null}
+        <div className="shout-actions">
+          {!recording ? (
+            <button className="primary-button" onClick={() => void startRecording()} disabled={!canRecord}>
+              Записать
+            </button>
+          ) : (
+            <button className="primary-button" onClick={stopRecording}>
+              Стоп
+            </button>
+          )}
+          <button className="text-button" onClick={() => void playStoredShout()}>
+            Прослушать
+          </button>
+          <button className="text-button" onClick={() => void deleteRecording()} disabled={!hasSavedShout || recording}>
+            Удалить
+          </button>
+          <button className="text-button" onClick={onClose} disabled={recording}>
+            Закрыть
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
 

@@ -18,24 +18,44 @@ function setup() {
 }
 
 describe("GameRoom", () => {
-  it("locks the buzzer to the first player", () => {
+  it("creates a timed answer attempt for the first buzzer", () => {
     const room = setup();
     expect(room.pressBuzzer("two-socket").ok).toBe(true);
     expect(room.pressBuzzer("one-socket").ok).toBe(false);
-    expect(room.getState("host").buzzerUserId).toBe("two");
+    const state = room.getState("host");
+    expect(state.buzzerUserId).toBe("two");
+    expect(state.answerAttempt?.userId).toBe("two");
+    expect(state.answerAttempt?.attemptNumber).toBe(1);
+    expect((state.answerAttempt?.deadlineAt ?? 0) - (state.answerAttempt?.startedAt ?? 0)).toBe(10_000);
+    expect(state.players.find((item) => item.userId === "two")?.isAnswering).toBe(true);
   });
 
-  it("scores, starts a new round, and never goes below zero", () => {
+  it("passes a wrong first answer to the opponent and never goes below zero", () => {
     const room = setup();
     room.pressBuzzer("one-socket");
     room.score("host", "one", -1);
     let state = room.getState("host");
     expect(state.players.find((item) => item.userId === "one")?.score).toBe(0);
+    expect(state.buzzerUserId).toBe("two");
+    expect(state.answerAttempt?.userId).toBe("two");
+    expect(state.answerAttempt?.attemptNumber).toBe(2);
+    expect(state.answerAttempt?.previousWrongUserIds).toEqual(["one"]);
+    expect(state.round).toBe(1);
+
+    room.score("host", "two", -1);
+    state = room.getState("host");
+    expect(state.answerAttempt).toBeNull();
     expect(state.buzzerUserId).toBeNull();
     expect(state.round).toBe(2);
+  });
 
+  it("scores a correct answer and starts a new round", () => {
+    const room = setup();
+    room.pressBuzzer("one-socket");
     room.score("host", "one", 1);
-    state = room.getState("host");
+    const state = room.getState("host");
+    expect(state.answerAttempt).toBeNull();
+    expect(state.round).toBe(2);
     expect(state.players[0].userId).toBe("one");
     expect(state.players[0].score).toBe(1);
   });
@@ -73,6 +93,22 @@ describe("GameRoom", () => {
     const room = setup();
     expect(room.score("one-socket", "one", 1).ok).toBe(false);
     expect(room.removePlayer("one-socket", "two").ok).toBe(false);
+  });
+
+  it("clears music state when the host leaves", () => {
+    const room = setup();
+    room.selectTrack("host", {
+      videoId: "video",
+      title: "Песня",
+      channelTitle: "Канал",
+      thumbnailUrl: null,
+    });
+    room.setMusicPlayback("host", "playing");
+    room.release("host");
+    const state = room.getState("one-socket");
+    expect(state.hostConnected).toBe(false);
+    expect(state.track).toBeNull();
+    expect(state.musicPlayback).toBe("idle");
   });
 
   it("does not let one identity occupy multiple player slots", () => {

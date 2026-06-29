@@ -1,5 +1,13 @@
 import { expect, test, type Page } from "@playwright/test";
 
+declare global {
+  interface Window {
+    __ytLastAction: string | null;
+    __ytLastVideoId: string | null;
+    __shoutPlayed: number;
+  }
+}
+
 async function expectNoVerticalScroll(page: Page) {
   const dimensions = await page.evaluate(() => ({
     viewportHeight: window.innerHeight,
@@ -16,6 +24,68 @@ async function expectMinimumHeight(page: Page, selector: string, minimum: number
   expect(heights.every((height) => height >= minimum)).toBe(true);
 }
 
+async function routeYouTubeStub(page: Page) {
+  await page.route("https://www.youtube.com/iframe_api", (route) =>
+    route.fulfill({
+      contentType: "application/javascript",
+      body: `
+        window.__ytLastAction = null;
+        window.__ytLastVideoId = null;
+        window.YT = {
+          PlayerState: { ENDED: 0, PLAYING: 1, PAUSED: 2 },
+          Player: function(element, options) {
+            element.innerHTML = '<iframe title="YouTube video player"></iframe>';
+            window.__ytLastVideoId = options.videoId;
+            this.playVideo = function() {
+              window.__ytLastAction = 'play';
+              options.events && options.events.onStateChange && options.events.onStateChange({ data: 1 });
+            };
+            this.pauseVideo = function() {
+              window.__ytLastAction = 'pause';
+              options.events && options.events.onStateChange && options.events.onStateChange({ data: 2 });
+            };
+            this.cueVideoById = function(videoId) {
+              window.__ytLastVideoId = videoId;
+            };
+            this.destroy = function() {};
+            setTimeout(function() {
+              options.events && options.events.onReady && options.events.onReady();
+            }, 0);
+          }
+        };
+        window.onYouTubeIframeAPIReady && window.onYouTubeIframeAPIReady();
+      `,
+    }),
+  );
+}
+
+async function installFallbackAudioCounter(page: Page) {
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "__shoutPlayed", { value: 0, writable: true });
+    class FakeParam {
+      setValueAtTime() {}
+      exponentialRampToValueAtTime() {}
+    }
+    class FakeAudioContext {
+      currentTime = 0;
+      destination = {};
+      createOscillator() {
+        return {
+          type: "square",
+          frequency: new FakeParam(),
+          connect() {},
+          start() { window.__shoutPlayed += 1; },
+          stop() {},
+        };
+      }
+      createGain() {
+        return { gain: new FakeParam(), connect() {} };
+      }
+    }
+    Object.defineProperty(window, "AudioContext", { value: FakeAudioContext, configurable: true });
+  });
+}
+
 test("host and two players can run a scoring round", async ({ browser }) => {
   const hostContext = await browser.newContext();
   const firstContext = await browser.newContext();
@@ -23,10 +93,19 @@ test("host and two players can run a scoring round", async ({ browser }) => {
   const host = await hostContext.newPage();
   const first = await firstContext.newPage();
   const second = await secondContext.newPage();
+  await routeYouTubeStub(host);
+  await installFallbackAudioCounter(first);
 
   await host.goto("/");
   await host.getByRole("button", { name: "Я ведущий" }).click();
   await expect(host.getByText("Панель ведущего")).toBeVisible();
+  await host.getByLabel("Найти песню в YouTube").fill("чоко");
+  await host.getByRole("button", { name: "Найти" }).click();
+  await expect(host.locator(".music-results button")).toHaveCount(2);
+  await host.locator(".music-results button").first().click();
+  await expect(host.getByText("чоко · тестовый трек")).toBeVisible();
+  await host.getByRole("button", { name: "Играть" }).click();
+  await expect.poll(() => host.evaluate(() => window.__ytLastAction)).toBe("play");
 
   await first.goto("/");
   await first.getByRole("button", { name: "Я игрок" }).click();
@@ -41,7 +120,9 @@ test("host and two players can run a scoring round", async ({ browser }) => {
   await expect(host.getByText("Медер")).toBeVisible();
 
   await first.getByRole("button", { name: "Знаю ответ" }).click();
+  await expect.poll(() => first.evaluate(() => window.__shoutPlayed)).toBe(1);
   await expect(host.getByText("Есть ответ!")).toBeVisible();
+  await expect.poll(() => host.evaluate(() => window.__ytLastAction)).toBe("pause");
   await host.locator(".plus-zone").first().click();
   await expect(first.locator(".score-row").first().locator(".score-value strong")).toHaveText("1");
 

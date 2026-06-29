@@ -6,26 +6,34 @@ import { z } from "zod";
 import type {
   AuthResponse,
   ClientToServerEvents,
+  MusicPlayback,
   ServerToClientEvents,
   SessionIdentity,
   SocketData,
+  YouTubeTrack,
 } from "../shared/types";
 import { GameRoom } from "./game-room";
 import { createProfileStore } from "./profile-store";
 import { createSessionToken, verifySessionToken } from "./session";
 import { validateTelegramInitData } from "./telegram";
+import { YouTubeSearchService } from "./youtube-search";
 
 const port = Number(process.env.PORT ?? 3000);
 const isProduction = process.env.NODE_ENV === "production";
 const allowDevAuth = process.env.ALLOW_DEV_AUTH === "true" || !isProduction;
 const sessionSecret = process.env.SESSION_SECRET ?? "geeksgame-local-development-secret";
 const botToken = process.env.BOT_TOKEN;
+const youtubeApiKey = process.env.YOUTUBE_API_KEY;
+const youtubeMockSearch = process.env.YOUTUBE_MOCK_SEARCH === "true";
 
 if (isProduction && !process.env.SESSION_SECRET) {
   console.warn("SESSION_SECRET is not configured; set it before enabling Telegram players.");
 }
 if (isProduction && !botToken) {
   console.warn("BOT_TOKEN is not configured; Telegram player login is disabled.");
+}
+if (isProduction && !youtubeApiKey) {
+  console.warn("YOUTUBE_API_KEY is not configured; host YouTube search is disabled.");
 }
 
 const app = express();
@@ -40,7 +48,19 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents, Record<string,
 );
 const room = new GameRoom();
 const profiles = createProfileStore();
+const youtubeSearch = new YouTubeSearchService({ apiKey: youtubeApiKey, mock: youtubeMockSearch });
 const nameSchema = z.string().trim().min(2).max(24);
+const trackSchema = z.object({
+  videoId: z.string().trim().min(3).max(64),
+  title: z.string().trim().min(1).max(180),
+  channelTitle: z.string().trim().min(1).max(120),
+  thumbnailUrl: z.string().url().nullable(),
+}) satisfies z.ZodType<YouTubeTrack>;
+const musicPlaybackSchema = z.union([
+  z.literal("idle"),
+  z.literal("playing"),
+  z.literal("paused"),
+]) satisfies z.ZodType<MusicPlayback>;
 
 app.use(express.json({ limit: "32kb" }));
 
@@ -69,6 +89,7 @@ app.get("/api/config", (_request, response) => {
   response.json({
     telegramConfigured: Boolean(botToken),
     devAuth: allowDevAuth,
+    youtubeConfigured: Boolean(youtubeApiKey || youtubeMockSearch),
   });
 });
 
@@ -209,6 +230,43 @@ io.on("connection", (socket) => {
   });
   socket.on("host:remove-player", (userId, callback) => {
     const result = room.removePlayer(socket.id, userId);
+    callback(result);
+    broadcastState();
+  });
+  socket.on("host:youtube-search", async (payload, callback) => {
+    if (!room.isHostSocket(socket.id)) {
+      callback({ ok: false, message: "Только ведущий ищет песни" });
+      return;
+    }
+    const parsed = z.object({ query: z.string().trim().min(2).max(80) }).safeParse(payload);
+    if (!parsed.success) {
+      callback({ ok: false, message: "Введите запрос от 2 до 80 символов" });
+      return;
+    }
+    try {
+      const results = await youtubeSearch.search(parsed.data.query);
+      callback({ ok: true, results });
+    } catch (error) {
+      console.error("YouTube search failed", error);
+      callback({
+        ok: false,
+        message: error instanceof Error ? error.message : "Не удалось найти песни в YouTube",
+      });
+    }
+  });
+  socket.on("host:track-select", (payload, callback) => {
+    const parsed = trackSchema.safeParse(payload);
+    const result = parsed.success
+      ? room.selectTrack(socket.id, parsed.data)
+      : { ok: false, message: "Некорректный YouTube-трек" };
+    callback(result);
+    broadcastState();
+  });
+  socket.on("host:music-state", (payload, callback) => {
+    const parsed = musicPlaybackSchema.safeParse(payload);
+    const result = parsed.success
+      ? room.setMusicPlayback(socket.id, parsed.data)
+      : { ok: false, message: "Некорректное состояние музыки" };
     callback(result);
     broadcastState();
   });

@@ -14,7 +14,7 @@
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "e2e:serve": "cross-env NODE_ENV=test ALLOW_DEV_AUTH=true PORT=4173 node dist/server/index.js",
+    "e2e:serve": "cross-env NODE_ENV=test ALLOW_DEV_AUTH=true YOUTUBE_MOCK_SEARCH=true PORT=4173 node dist/server/index.js",
     "db:generate": "prisma generate",
     "db:migrate": "node scripts/migrate.mjs"
   },

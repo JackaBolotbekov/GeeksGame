@@ -5,7 +5,10 @@ import type {
   ClaimableRole,
   ClientToServerEvents,
   GameState,
+  MusicPlayback,
   ServerToClientEvents,
+  YouTubeSearchResult,
+  YouTubeTrack,
 } from "../shared/types";
 
 const initialState: GameState = {
@@ -16,6 +19,9 @@ const initialState: GameState = {
   winnerUserId: null,
   round: 1,
   scoreEvent: null,
+  track: null,
+  musicPlayback: "idle",
+  answerAttempt: null,
 };
 
 type GameSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -41,11 +47,11 @@ export function useGameSocket(sessionToken: string | null) {
   }, [sessionToken]);
 
   const withAck = useCallback(
-    (emit: (socket: GameSocket, callback: (result: ActionResult) => void) => void) =>
-      new Promise<ActionResult>((resolve) => {
+    <T extends ActionResult>(emit: (socket: GameSocket, callback: (result: T) => void) => void) =>
+      new Promise<T>((resolve) => {
         const socket = socketRef.current;
         if (!socket) {
-          resolve({ ok: false, message: "Нет соединения с игрой" });
+          resolve({ ok: false, message: "Нет соединения с игрой" } as T);
           return;
         }
         emit(socket, (result) => {
@@ -87,6 +93,22 @@ export function useGameSocket(sessionToken: string | null) {
       withAck((socket, callback) => socket.emit("host:remove-player", userId, callback)),
     [withAck],
   );
+  const youtubeSearch = useCallback(
+    (query: string) =>
+      withAck<YouTubeSearchResult>((socket, callback) =>
+        socket.emit("host:youtube-search", { query }, callback)),
+    [withAck],
+  );
+  const selectTrack = useCallback(
+    (track: YouTubeTrack) =>
+      withAck((socket, callback) => socket.emit("host:track-select", track, callback)),
+    [withAck],
+  );
+  const setMusicState = useCallback(
+    (playback: MusicPlayback) =>
+      withAck((socket, callback) => socket.emit("host:music-state", playback, callback)),
+    [withAck],
+  );
 
   return {
     state,
@@ -100,5 +122,8 @@ export function useGameSocket(sessionToken: string | null) {
     nextRound,
     resetMatch,
     removePlayer,
+    youtubeSearch,
+    selectTrack,
+    setMusicState,
   };
 }
