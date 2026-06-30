@@ -129,7 +129,8 @@ test("host and two players can run a scoring round", async ({ browser }) => {
   await expect(host.locator(".track-ticker").getByText("чоко · тестовый трек")).toBeVisible();
 
   await host.getByRole("button", { name: "+ плейлист" }).click();
-  await expect(host.locator(".playlist-composer")).toBeVisible();
+  await expect(host.locator(".playlist-sidebar .playlist-composer")).toBeVisible();
+  await expect(host.locator(".youtube-main-feed .playlist-composer")).toHaveCount(0);
   await host.getByLabel("PIN админки плейлистов").fill("1234");
   await host.getByRole("button", { name: "Открыть плейлисты" }).click();
   await expect(host.getByText("Админка плейлистов открыта")).toBeVisible();
@@ -138,7 +139,7 @@ test("host and two players can run a scoring round", async ({ browser }) => {
   await host.getByRole("button", { name: "Сохранить плейлист" }).click();
   await expect(host.locator(".playlist-card").filter({ hasText: "Старые хиты" })).toBeVisible();
   await expect(host.locator(".playlist-add-form")).toBeVisible();
-  await host.locator(".playlist-close").click();
+  await host.getByRole("button", { name: "Закрыть" }).click();
   await expect(host.locator(".playlist-composer")).toHaveCount(0);
   await host.locator(".playlist-card").filter({ hasText: "Старые хиты" }).click();
   await expect(host.locator(".music-results button:not(.music-load-more)")).toHaveCount(24);

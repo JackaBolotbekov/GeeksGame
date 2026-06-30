@@ -780,6 +780,16 @@ function HostMusicPanel({
           selectedPlaylistId={selectedPlaylistId}
           loading={playlistLoading}
           composerOpen={playlistComposerOpen}
+          pin={playlistPin}
+          url={playlistUrl}
+          title={playlistTitle}
+          message={playlistMessage}
+          youtubeConfigured={youtubeConfigured}
+          onPinChange={onPlaylistPinChange}
+          onUrlChange={onPlaylistUrlChange}
+          onTitleChange={onPlaylistTitleChange}
+          onUnlock={onPlaylistAdminUnlock}
+          onAdd={onPlaylistAdd}
           onOpen={onPlaylistOpen}
           onDelete={onPlaylistDelete}
           onToggleComposer={onPlaylistComposerToggle}
@@ -793,21 +803,6 @@ function HostMusicPanel({
               onPlaybackChange={onMusicState}
             />
           </div>
-          <PlaylistComposer
-            open={playlistComposerOpen}
-            adminUnlocked={playlistAdminUnlocked}
-            pin={playlistPin}
-            url={playlistUrl}
-            title={playlistTitle}
-            message={playlistMessage}
-            youtubeConfigured={youtubeConfigured}
-            onPinChange={onPlaylistPinChange}
-            onUrlChange={onPlaylistUrlChange}
-            onTitleChange={onPlaylistTitleChange}
-            onUnlock={onPlaylistAdminUnlock}
-            onAdd={onPlaylistAdd}
-            onClose={onPlaylistComposerToggle}
-          />
           {searchMessage ? <p className="music-search-message">{searchMessage}</p> : null}
           {results.length ? (
             <div className="music-results">
@@ -865,6 +860,16 @@ function PlaylistSidebar({
   selectedPlaylistId,
   loading,
   composerOpen,
+  pin,
+  url,
+  title,
+  message,
+  youtubeConfigured,
+  onPinChange,
+  onUrlChange,
+  onTitleChange,
+  onUnlock,
+  onAdd,
   onOpen,
   onDelete,
   onToggleComposer,
@@ -874,6 +879,16 @@ function PlaylistSidebar({
   selectedPlaylistId: string | null;
   loading: boolean;
   composerOpen: boolean;
+  pin: string;
+  url: string;
+  title: string;
+  message: string | null;
+  youtubeConfigured: boolean;
+  onPinChange: (pin: string) => void;
+  onUrlChange: (url: string) => void;
+  onTitleChange: (title: string) => void;
+  onUnlock: (event: FormEvent) => void;
+  onAdd: (event: FormEvent) => void;
   onOpen: (playlist: YouTubePlaylist) => void;
   onDelete: (playlist: YouTubePlaylist) => void;
   onToggleComposer: () => void;
@@ -893,6 +908,20 @@ function PlaylistSidebar({
           {composerOpen ? "Закрыть" : "+ плейлист"}
         </button>
       </div>
+      <PlaylistComposer
+        open={composerOpen}
+        adminUnlocked={adminUnlocked}
+        pin={pin}
+        url={url}
+        title={title}
+        message={message}
+        youtubeConfigured={youtubeConfigured}
+        onPinChange={onPinChange}
+        onUrlChange={onUrlChange}
+        onTitleChange={onTitleChange}
+        onUnlock={onUnlock}
+        onAdd={onAdd}
+      />
       {loading ? <small className="playlist-sidebar-note">загружаем треки...</small> : null}
       {playlists.length ? (
         <div className="playlist-sidebar-list">
@@ -939,7 +968,6 @@ function PlaylistComposer({
   onTitleChange,
   onUnlock,
   onAdd,
-  onClose,
 }: {
   open: boolean;
   adminUnlocked: boolean;
@@ -953,15 +981,11 @@ function PlaylistComposer({
   onTitleChange: (title: string) => void;
   onUnlock: (event: FormEvent) => void;
   onAdd: (event: FormEvent) => void;
-  onClose: () => void;
 }) {
   if (!open) return null;
 
   return (
     <div className="playlist-composer">
-      <button className="playlist-close" type="button" onClick={onClose}>
-        Закрыть добавление
-      </button>
       <PlaylistPanel
         playlists={[]}
         adminUnlocked={adminUnlocked}
