@@ -438,6 +438,7 @@ function HostScreen({
   const [playlistUrl, setPlaylistUrl] = useState("");
   const [playlistTitle, setPlaylistTitle] = useState("");
   const [playlistMessage, setPlaylistMessage] = useState<string | null>(null);
+  const [playlistComposerOpen, setPlaylistComposerOpen] = useState(false);
   const [playlistLoading, setPlaylistLoading] = useState(false);
   const [selectedPlaylist, setSelectedPlaylist] = useState<YouTubePlaylist | null>(null);
   const activeSearchRef = useRef("");
@@ -586,6 +587,7 @@ function HostScreen({
             playlistUrl={playlistUrl}
             playlistTitle={playlistTitle}
             playlistMessage={playlistMessage}
+            playlistComposerOpen={playlistComposerOpen}
             selectedPlaylistId={selectedPlaylist?.id ?? null}
             onQueryChange={setQuery}
             onSearch={submitSearch}
@@ -597,6 +599,10 @@ function HostScreen({
             onPlaylistAdd={addPlaylist}
             onPlaylistOpen={(playlist) => void loadPlaylistTracks(playlist)}
             onPlaylistDelete={(playlist) => void deletePlaylist(playlist)}
+            onPlaylistComposerToggle={() => {
+              setPlaylistComposerOpen((isOpen) => !isOpen);
+              setPlaylistMessage(null);
+            }}
             onLoadMore={() => {
               if (!nextPageToken || searching || loadingMore) return;
               if (resultMode === "playlist" && selectedPlaylist) void loadPlaylistTracks(selectedPlaylist, nextPageToken);
@@ -676,6 +682,7 @@ function HostMusicPanel({
   playlistUrl,
   playlistTitle,
   playlistMessage,
+  playlistComposerOpen,
   selectedPlaylistId,
   onQueryChange,
   onSearch,
@@ -687,6 +694,7 @@ function HostMusicPanel({
   onPlaylistAdd,
   onPlaylistOpen,
   onPlaylistDelete,
+  onPlaylistComposerToggle,
   onLoadMore,
   onSelectTrack,
   onMusicState,
@@ -706,6 +714,7 @@ function HostMusicPanel({
   playlistUrl: string;
   playlistTitle: string;
   playlistMessage: string | null;
+  playlistComposerOpen: boolean;
   selectedPlaylistId: string | null;
   onQueryChange: (query: string) => void;
   onSearch: (event: FormEvent) => void;
@@ -717,6 +726,7 @@ function HostMusicPanel({
   onPlaylistAdd: (event: FormEvent) => void;
   onPlaylistOpen: (playlist: YouTubePlaylist) => void;
   onPlaylistDelete: (playlist: YouTubePlaylist) => void;
+  onPlaylistComposerToggle: () => void;
   onLoadMore: () => void;
   onSelectTrack: (track: YouTubeTrack) => void;
   onMusicState: (playback: MusicPlayback) => void;
@@ -764,14 +774,16 @@ function HostMusicPanel({
         </div>
       </div>
       <div className="youtube-browser-body">
-        <aside className="youtube-side-nav" aria-label="Разделы YouTube">
-          <span className="is-active">Главная</span>
-          <span>Shorts</span>
-          <span>Музыка</span>
-          <span>Джемы</span>
-          <span>Топ-чарты</span>
-          <span>Плейлисты</span>
-        </aside>
+        <PlaylistSidebar
+          playlists={playlists}
+          adminUnlocked={playlistAdminUnlocked}
+          selectedPlaylistId={selectedPlaylistId}
+          loading={playlistLoading}
+          composerOpen={playlistComposerOpen}
+          onOpen={onPlaylistOpen}
+          onDelete={onPlaylistDelete}
+          onToggleComposer={onPlaylistComposerToggle}
+        />
         <div className="youtube-main-feed">
           <div className="music-player-shell">
             <YouTubePlayer
@@ -781,23 +793,20 @@ function HostMusicPanel({
               onPlaybackChange={onMusicState}
             />
           </div>
-          <PlaylistPanel
-            playlists={playlists}
+          <PlaylistComposer
+            open={playlistComposerOpen}
             adminUnlocked={playlistAdminUnlocked}
             pin={playlistPin}
             url={playlistUrl}
             title={playlistTitle}
             message={playlistMessage}
-            selectedPlaylistId={selectedPlaylistId}
-            loading={playlistLoading}
             youtubeConfigured={youtubeConfigured}
             onPinChange={onPlaylistPinChange}
             onUrlChange={onPlaylistUrlChange}
             onTitleChange={onPlaylistTitleChange}
             onUnlock={onPlaylistAdminUnlock}
             onAdd={onPlaylistAdd}
-            onOpen={onPlaylistOpen}
-            onDelete={onPlaylistDelete}
+            onClose={onPlaylistComposerToggle}
           />
           {searchMessage ? <p className="music-search-message">{searchMessage}</p> : null}
           {results.length ? (
@@ -847,6 +856,131 @@ function HostMusicPanel({
         </div>
       </div>
     </section>
+  );
+}
+
+function PlaylistSidebar({
+  playlists,
+  adminUnlocked,
+  selectedPlaylistId,
+  loading,
+  composerOpen,
+  onOpen,
+  onDelete,
+  onToggleComposer,
+}: {
+  playlists: YouTubePlaylist[];
+  adminUnlocked: boolean;
+  selectedPlaylistId: string | null;
+  loading: boolean;
+  composerOpen: boolean;
+  onOpen: (playlist: YouTubePlaylist) => void;
+  onDelete: (playlist: YouTubePlaylist) => void;
+  onToggleComposer: () => void;
+}) {
+  return (
+    <aside className="youtube-side-nav playlist-sidebar" aria-label="Сохранённые плейлисты">
+      <div className="playlist-sidebar-head">
+        <div>
+          <span>Плейлисты</span>
+          <strong>{playlists.length ? `${playlists.length} сохранено` : "пока пусто"}</strong>
+        </div>
+        <button
+          className={composerOpen ? "playlist-toggle is-open" : "playlist-toggle"}
+          type="button"
+          onClick={onToggleComposer}
+        >
+          {composerOpen ? "Закрыть" : "+ плейлист"}
+        </button>
+      </div>
+      {loading ? <small className="playlist-sidebar-note">загружаем треки...</small> : null}
+      {playlists.length ? (
+        <div className="playlist-sidebar-list">
+          {playlists.map((playlist) => (
+            <article
+              className={`playlist-card-wrap ${selectedPlaylistId === playlist.id ? "is-selected" : ""}`}
+              key={playlist.id}
+            >
+              <button className="playlist-card" type="button" onClick={() => onOpen(playlist)}>
+                {playlist.thumbnailUrl ? <img src={playlist.thumbnailUrl} alt="" /> : <span>▶</span>}
+                <strong>{playlist.title}</strong>
+                <small>{playlist.itemCount === null ? "треков пока не знаем" : `${playlist.itemCount} треков`}</small>
+              </button>
+              {adminUnlocked ? (
+                <button
+                  className="playlist-delete"
+                  type="button"
+                  aria-label={`Удалить плейлист ${playlist.title}`}
+                  onClick={() => onDelete(playlist)}
+                >
+                  ×
+                </button>
+              ) : null}
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p className="playlist-empty">Нажмите + плейлист, чтобы добавить YouTube-ссылку.</p>
+      )}
+    </aside>
+  );
+}
+
+function PlaylistComposer({
+  open,
+  adminUnlocked,
+  pin,
+  url,
+  title,
+  message,
+  youtubeConfigured,
+  onPinChange,
+  onUrlChange,
+  onTitleChange,
+  onUnlock,
+  onAdd,
+  onClose,
+}: {
+  open: boolean;
+  adminUnlocked: boolean;
+  pin: string;
+  url: string;
+  title: string;
+  message: string | null;
+  youtubeConfigured: boolean;
+  onPinChange: (pin: string) => void;
+  onUrlChange: (url: string) => void;
+  onTitleChange: (title: string) => void;
+  onUnlock: (event: FormEvent) => void;
+  onAdd: (event: FormEvent) => void;
+  onClose: () => void;
+}) {
+  if (!open) return null;
+
+  return (
+    <div className="playlist-composer">
+      <button className="playlist-close" type="button" onClick={onClose}>
+        Закрыть добавление
+      </button>
+      <PlaylistPanel
+        playlists={[]}
+        adminUnlocked={adminUnlocked}
+        pin={pin}
+        url={url}
+        title={title}
+        message={message}
+        selectedPlaylistId={null}
+        loading={false}
+        youtubeConfigured={youtubeConfigured}
+        onPinChange={onPinChange}
+        onUrlChange={onUrlChange}
+        onTitleChange={onTitleChange}
+        onUnlock={onUnlock}
+        onAdd={onAdd}
+        onOpen={() => undefined}
+        onDelete={() => undefined}
+      />
+    </div>
   );
 }
 
