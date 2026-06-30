@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import type { AuthResponse, GameState, MusicPlayback, PlayerView, YouTubePlaylist, YouTubeTrack } from "../shared/types";
 import { useGameSocket } from "./use-game-socket";
 
@@ -39,6 +39,8 @@ const SHOUT_DB_NAME = "geeksgame-shout";
 const SHOUT_STORE_NAME = "clips";
 const SHOUT_KEY = "player-shout";
 let youtubeApiPromise: Promise<void> | null = null;
+const HOST_SPLIT_STORAGE_KEY = "geeksgame-host-split";
+const DEFAULT_HOST_SPLIT_PERCENT = 68;
 
 function openShoutDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -441,10 +443,54 @@ function HostScreen({
   const [playlistComposerOpen, setPlaylistComposerOpen] = useState(false);
   const [playlistLoading, setPlaylistLoading] = useState(false);
   const [selectedPlaylist, setSelectedPlaylist] = useState<YouTubePlaylist | null>(null);
+  const hostStageRef = useRef<HTMLDivElement | null>(null);
+  const [hostSplitPercent, setHostSplitPercent] = useState(() => {
+    const saved = Number(window.localStorage.getItem(HOST_SPLIT_STORAGE_KEY));
+    return Number.isFinite(saved) ? Math.min(82, Math.max(38, saved)) : DEFAULT_HOST_SPLIT_PERCENT;
+  });
+  const [hostResizing, setHostResizing] = useState(false);
   const activeSearchRef = useRef("");
   const activePlaylistRef = useRef("");
   const setMusicState = game.setMusicState;
   const listPlaylists = game.listPlaylists;
+  const setHostSplit = useCallback((nextPercent: number) => {
+    const rounded = Math.round(nextPercent * 10) / 10;
+    setHostSplitPercent(rounded);
+    window.localStorage.setItem(HOST_SPLIT_STORAGE_KEY, String(rounded));
+  }, []);
+  const updateHostSplitFromPointer = useCallback((clientX: number) => {
+    const stage = hostStageRef.current;
+    if (!stage) return;
+    const rect = stage.getBoundingClientRect();
+    if (!rect.width) return;
+    const minMusicPx = 480;
+    const minGamePx = 340;
+    const reservedPx = 40;
+    const minPercent = Math.max(34, Math.min(62, (minMusicPx / rect.width) * 100));
+    const maxPercent = Math.min(82, Math.max(minPercent + 4, ((rect.width - minGamePx - reservedPx) / rect.width) * 100));
+    const rawPercent = ((clientX - rect.left) / rect.width) * 100;
+    setHostSplit(Math.min(maxPercent, Math.max(minPercent, rawPercent)));
+  }, [setHostSplit]);
+  const startHostResize = useCallback((event: ReactPointerEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    setHostResizing(true);
+    document.documentElement.classList.add("is-host-resizing");
+    updateHostSplitFromPointer(event.clientX);
+    const handlePointerMove = (moveEvent: PointerEvent) => updateHostSplitFromPointer(moveEvent.clientX);
+    const stopResize = () => {
+      setHostResizing(false);
+      document.documentElement.classList.remove("is-host-resizing");
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", stopResize);
+      window.removeEventListener("pointercancel", stopResize);
+    };
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", stopResize);
+    window.addEventListener("pointercancel", stopResize);
+  }, [updateHostSplitFromPointer]);
+  const resetHostSplit = useCallback(() => {
+    setHostSplit(DEFAULT_HOST_SPLIT_PERCENT);
+  }, [setHostSplit]);
   const handleMusicState = useCallback((playback: MusicPlayback) => {
     void setMusicState(playback);
   }, [setMusicState]);
@@ -569,7 +615,11 @@ function HostScreen({
       onRelease={onRelease}
       className={state.answerAttempt ? "has-answer-attempt" : ""}
     >
-      <div className="host-stage">
+      <div
+        className={hostResizing ? "host-stage is-resizing" : "host-stage"}
+        ref={hostStageRef}
+        style={{ "--host-music-width": `${hostSplitPercent}%` } as CSSProperties}
+      >
         <div className="host-stage-music">
           <HostMusicPanel
             state={state}
@@ -614,6 +664,14 @@ function HostScreen({
             onMusicState={handleMusicState}
           />
         </div>
+        <button
+          className="host-stage-resizer"
+          type="button"
+          aria-label="Изменить ширину YouTube и счёта"
+          aria-valuenow={Math.round(hostSplitPercent)}
+          onPointerDown={startHostResize}
+          onDoubleClick={resetHostSplit}
+        />
         <div className="host-stage-game">
           <div className="host-status">
             <span className={state.answerAttempt ? "status-live" : ""}>

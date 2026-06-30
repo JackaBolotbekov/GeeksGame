@@ -367,8 +367,8 @@ button:disabled {
   flex: 1 1 auto;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(520px, 1.65fr) minmax(360px, 0.75fr);
-  gap: 18px;
+  grid-template-columns: clamp(480px, var(--host-music-width, 68%), calc(100% - 380px)) 12px minmax(340px, 1fr);
+  gap: 8px;
   align-items: stretch;
 }
 
@@ -383,6 +383,48 @@ button:disabled {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.host-stage-resizer {
+  position: relative;
+  width: 12px;
+  min-width: 12px;
+  height: 100%;
+  align-self: stretch;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  cursor: col-resize;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.host-stage-resizer::before {
+  content: "";
+  position: absolute;
+  inset: 42% 5px;
+  border-radius: 999px;
+  background: rgba(255, 226, 41, 0.42);
+  opacity: 0;
+  transition: opacity 140ms ease, inset 140ms ease;
+}
+
+.host-stage-resizer:hover::before,
+.host-stage-resizer:focus-visible::before,
+.host-stage.is-resizing .host-stage-resizer::before {
+  inset: 36% 5px;
+  opacity: 1;
+}
+
+.host-stage-resizer:focus-visible {
+  outline: 2px solid rgba(255, 226, 41, 0.75);
+  outline-offset: 2px;
+}
+
+html.is-host-resizing,
+html.is-host-resizing * {
+  cursor: col-resize !important;
+  user-select: none !important;
 }
 
 .host-stage-game .host-cards {
@@ -411,8 +453,12 @@ button:disabled {
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-color: #5f6068 transparent;
-  scrollbar-width: thin;
+  scrollbar-width: none;
+}
+
+.host-stage-music .host-music-panel::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .host-stage-music .music-search-panel {
@@ -1738,6 +1784,10 @@ button:disabled {
   .host-stage {
     display: flex;
     flex-direction: column;
+  }
+
+  .host-stage-resizer {
+    display: none;
   }
 
   .host-stage-game {

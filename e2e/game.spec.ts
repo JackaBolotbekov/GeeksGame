@@ -114,6 +114,17 @@ test("host and two players can run a scoring round", async ({ browser }) => {
   await host.goto("/");
   await host.getByRole("button", { name: "Я ведущий" }).click();
   await expect(host.getByText("Панель ведущего")).toBeVisible();
+  const resizer = host.locator(".host-stage-resizer");
+  await expect(resizer).toBeVisible();
+  const splitBefore = await host.locator(".host-stage").evaluate((element) => getComputedStyle(element).gridTemplateColumns);
+  const resizerBox = await resizer.boundingBox();
+  if (!resizerBox) throw new Error("Host split resizer is not measurable");
+  await host.mouse.move(resizerBox.x + resizerBox.width / 2, resizerBox.y + resizerBox.height / 2);
+  await host.mouse.down();
+  await host.mouse.move(resizerBox.x - 90, resizerBox.y + resizerBox.height / 2);
+  await host.mouse.up();
+  const splitAfter = await host.locator(".host-stage").evaluate((element) => getComputedStyle(element).gridTemplateColumns);
+  expect(splitAfter).not.toBe(splitBefore);
   await host.getByLabel("Найти песню в YouTube").fill("чоко");
   await host.getByRole("button", { name: "Найти" }).click();
   await expect(host.locator(".youtube-browser")).toBeVisible();
