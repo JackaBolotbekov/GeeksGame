@@ -169,6 +169,10 @@ button:disabled {
   margin: 0 auto;
 }
 
+.host-screen {
+  width: min(1540px, 100%);
+}
+
 .role-screen {
   padding-top: clamp(22px, 7vh, 86px);
 }
@@ -331,6 +335,75 @@ button:disabled {
   grid-template-columns: minmax(320px, 1fr) minmax(280px, 0.85fr);
   gap: 14px;
   margin-bottom: 18px;
+}
+
+.host-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(520px, 1.65fr) minmax(360px, 0.75fr);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.host-stage-music,
+.host-stage-game {
+  min-width: 0;
+  min-height: 0;
+}
+
+.host-stage-game {
+  display: flex;
+  flex-direction: column;
+}
+
+.host-stage-game .host-cards {
+  flex: 1 1 auto;
+  min-height: 0;
+  grid-template-columns: 1fr;
+  grid-auto-rows: minmax(0, 1fr);
+}
+
+.host-stage-game .host-controls {
+  flex: 0 0 auto;
+}
+
+.host-stage-music .host-music-panel {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 0;
+}
+
+.host-stage-music .music-search-panel {
+  order: -1;
+  flex: 0 0 auto;
+  background: rgba(10, 11, 14, 0.86);
+}
+
+.host-stage-music .music-player-shell {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+
+.host-stage-music .youtube-player-card {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: rgba(10, 11, 14, 0.86);
+}
+
+.host-stage-music .youtube-frame {
+  flex: 1 1 auto;
+  min-height: 360px;
+}
+
+.host-stage-music .music-results {
+  max-height: min(26vh, 280px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .youtube-player-card,
@@ -1044,6 +1117,40 @@ button:disabled {
   to { outline-color: rgba(255, 226, 41, 0.35); }
 }
 
+@media (max-width: 980px) {
+  .host-screen {
+    width: 100%;
+  }
+
+  .host-stage {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .host-stage-game {
+    flex: 1 1 auto;
+  }
+
+  .host-stage-music .host-music-panel {
+    height: auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    margin-bottom: 18px;
+  }
+
+  .host-stage-music .music-search-panel {
+    order: 0;
+  }
+
+  .host-stage-music .music-results {
+    grid-template-columns: 1fr;
+  }
+
+  .host-stage-music .youtube-frame {
+    min-height: 200px;
+  }
+}
+
 @media (max-width: 760px) {
   .app-shell {
     padding:
@@ -1192,6 +1299,16 @@ button:disabled {
     margin-bottom: 8px;
   }
 
+  .host-stage {
+    flex: 1 1 auto;
+    min-height: 0;
+    gap: 0;
+  }
+
+  .host-stage-music .host-music-panel {
+    margin-bottom: 8px;
+  }
+
   .youtube-player-card,
   .music-search-panel {
     padding: 8px;
@@ -1208,7 +1325,15 @@ button:disabled {
     border-radius: 13px;
   }
 
+  .host-stage-music .youtube-frame {
+    min-height: 92px;
+  }
+
   .youtube-player-card.has-track .youtube-frame {
+    min-height: 200px;
+  }
+
+  .host-stage-music .youtube-player-card.has-track .youtube-frame {
     min-height: 200px;
   }
 
@@ -1313,7 +1438,7 @@ button:disabled {
   .host-controls {
     flex: 0 0 auto;
     gap: 8px;
-    margin-top: clamp(12px, 1.8vh, 18px);
+    margin-top: clamp(8px, 1.2vh, 10px);
   }
 
   .host-controls button,

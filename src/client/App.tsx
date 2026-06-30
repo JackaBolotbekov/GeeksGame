@@ -443,64 +443,70 @@ function HostScreen({
       title={state.winnerUserId ? "Матч завершён" : `Раунд ${state.round}`}
       onRelease={onRelease}
     >
-      <HostMusicPanel
-        state={state}
-        query={query}
-        results={results}
-        searching={searching}
-        searchMessage={searchMessage}
-        youtubeConfigured={youtubeConfigured}
-        onQueryChange={setQuery}
-        onSearch={searchTracks}
-        onSelectTrack={(track) => {
-          setResults([]);
-          void game.selectTrack(track);
-        }}
-        onMusicState={handleMusicState}
-      />
-      <div className="host-status">
-        <span className={state.answerAttempt ? "status-live" : ""}>
-          {state.answerAttempt ? "Есть ответ!" : "Ждём первый сигнал"}
-        </span>
-        <p>
-          {state.answerAttempt
-            ? "Музыка на паузе. Оцените ответ активного игрока."
-            : "Нажмите левую или правую часть карточки любого игрока."}
-        </p>
-        <AnswerTimer attempt={state.answerAttempt} />
-      </div>
-      <div className="host-cards">
-        {state.players.length ? state.players.map((player) => (
-          <HostPlayerCard
-            key={player.userId}
-            player={player}
-            scoreEvent={state.scoreEvent}
-            winner={state.winnerUserId === player.userId}
-            activeAttemptUserId={state.answerAttempt?.userId ?? null}
-            onScore={(delta) => {
-              haptic(delta === 1 ? "success" : "heavy");
-              void game.score(player.userId, delta);
+      <div className="host-stage">
+        <div className="host-stage-music">
+          <HostMusicPanel
+            state={state}
+            query={query}
+            results={results}
+            searching={searching}
+            searchMessage={searchMessage}
+            youtubeConfigured={youtubeConfigured}
+            onQueryChange={setQuery}
+            onSearch={searchTracks}
+            onSelectTrack={(track) => {
+              setResults([]);
+              void game.selectTrack(track);
             }}
-            onRemove={() => {
-              if (window.confirm(`Освободить место игрока ${player.displayName}?`)) {
-                void game.removePlayer(player.userId);
-              }
-            }}
+            onMusicState={handleMusicState}
           />
-        )) : <EmptyPlayers />}
-      </div>
-      <div className="host-controls">
-        <button onClick={() => void game.nextRound()} disabled={Boolean(state.winnerUserId)}>
-          Новый раунд
-        </button>
-        <button
-          className="danger-ghost"
-          onClick={() => {
-            if (window.confirm("Сбросить весь счёт и начать матч заново?")) void game.resetMatch();
-          }}
-        >
-          Сбросить матч
-        </button>
+        </div>
+        <div className="host-stage-game">
+          <div className="host-status">
+            <span className={state.answerAttempt ? "status-live" : ""}>
+              {state.answerAttempt ? "Есть ответ!" : "Ждём первый сигнал"}
+            </span>
+            <p>
+              {state.answerAttempt
+                ? "Музыка на паузе. Оцените ответ активного игрока."
+                : "Нажмите левую или правую часть карточки любого игрока."}
+            </p>
+            <AnswerTimer attempt={state.answerAttempt} />
+          </div>
+          <div className="host-cards">
+            {state.players.length ? state.players.map((player) => (
+              <HostPlayerCard
+                key={player.userId}
+                player={player}
+                scoreEvent={state.scoreEvent}
+                winner={state.winnerUserId === player.userId}
+                activeAttemptUserId={state.answerAttempt?.userId ?? null}
+                onScore={(delta) => {
+                  haptic(delta === 1 ? "success" : "heavy");
+                  void game.score(player.userId, delta);
+                }}
+                onRemove={() => {
+                  if (window.confirm(`Освободить место игрока ${player.displayName}?`)) {
+                    void game.removePlayer(player.userId);
+                  }
+                }}
+              />
+            )) : <EmptyPlayers />}
+          </div>
+          <div className="host-controls">
+            <button onClick={() => void game.nextRound()} disabled={Boolean(state.winnerUserId)}>
+              Новый раунд
+            </button>
+            <button
+              className="danger-ghost"
+              onClick={() => {
+                if (window.confirm("Сбросить весь счёт и начать матч заново?")) void game.resetMatch();
+              }}
+            >
+              Сбросить матч
+            </button>
+          </div>
+        </div>
       </div>
       <WinnerOverlay state={state} />
     </ScreenFrame>
@@ -629,6 +635,12 @@ function YouTubePlayer({
       cancelled = true;
     };
   }, [onPlaybackChange, videoId]);
+
+  useEffect(() => {
+    if (videoId) return;
+    playerRef.current?.destroy();
+    playerRef.current = null;
+  }, [videoId]);
 
   useEffect(() => {
     return () => {
