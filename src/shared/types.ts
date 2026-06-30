@@ -33,6 +33,15 @@ export interface YouTubeTrack {
   thumbnailUrl: string | null;
 }
 
+export interface YouTubePlaylist {
+  id: string;
+  youtubePlaylistId: string;
+  title: string;
+  sourceUrl: string;
+  thumbnailUrl: string | null;
+  itemCount: number | null;
+}
+
 export interface AnswerAttempt {
   userId: string;
   attemptNumber: number;
@@ -68,6 +77,19 @@ export interface YouTubeSearchResult extends ActionResult {
   nextPageToken?: string | null;
 }
 
+export interface YouTubePlaylistListResult extends ActionResult {
+  playlists?: YouTubePlaylist[];
+}
+
+export interface YouTubePlaylistItemsResult extends ActionResult {
+  results?: YouTubeTrack[];
+  nextPageToken?: string | null;
+}
+
+export interface PlaylistAdminResult extends ActionResult {
+  unlocked?: boolean;
+}
+
 export interface ClientToServerEvents {
   "role:claim": (role: ClaimableRole, callback: (result: ActionResult) => void) => void;
   "role:release": (callback: (result: ActionResult) => void) => void;
@@ -77,6 +99,11 @@ export interface ClientToServerEvents {
   "host:reset-match": (callback: (result: ActionResult) => void) => void;
   "host:remove-player": (userId: string, callback: (result: ActionResult) => void) => void;
   "host:youtube-search": (payload: { query: string; pageToken?: string | null }, callback: (result: YouTubeSearchResult) => void) => void;
+  "host:playlist-admin-unlock": (payload: { pin: string }, callback: (result: PlaylistAdminResult) => void) => void;
+  "host:playlists:list": (callback: (result: YouTubePlaylistListResult) => void) => void;
+  "host:playlists:add": (payload: { url: string; title?: string | null }, callback: (result: YouTubePlaylistListResult) => void) => void;
+  "host:playlists:delete": (id: string, callback: (result: YouTubePlaylistListResult) => void) => void;
+  "host:playlist-items": (payload: { id: string; pageToken?: string | null }, callback: (result: YouTubePlaylistItemsResult) => void) => void;
   "host:track-select": (track: YouTubeTrack, callback: (result: ActionResult) => void) => void;
   "host:music-state": (playback: MusicPlayback, callback: (result: ActionResult) => void) => void;
 }

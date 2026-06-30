@@ -6,7 +6,10 @@ import type {
   ClientToServerEvents,
   GameState,
   MusicPlayback,
+  PlaylistAdminResult,
   ServerToClientEvents,
+  YouTubePlaylistItemsResult,
+  YouTubePlaylistListResult,
   YouTubeSearchResult,
   YouTubeTrack,
 } from "../shared/types";
@@ -99,6 +102,36 @@ export function useGameSocket(sessionToken: string | null) {
         socket.emit("host:youtube-search", { query, pageToken }, callback)),
     [withAck],
   );
+  const unlockPlaylistAdmin = useCallback(
+    (pin: string) =>
+      withAck<PlaylistAdminResult>((socket, callback) =>
+        socket.emit("host:playlist-admin-unlock", { pin }, callback)),
+    [withAck],
+  );
+  const listPlaylists = useCallback(
+    () =>
+      withAck<YouTubePlaylistListResult>((socket, callback) =>
+        socket.emit("host:playlists:list", callback)),
+    [withAck],
+  );
+  const addPlaylist = useCallback(
+    (url: string, title?: string | null) =>
+      withAck<YouTubePlaylistListResult>((socket, callback) =>
+        socket.emit("host:playlists:add", { url, title }, callback)),
+    [withAck],
+  );
+  const deletePlaylist = useCallback(
+    (id: string) =>
+      withAck<YouTubePlaylistListResult>((socket, callback) =>
+        socket.emit("host:playlists:delete", id, callback)),
+    [withAck],
+  );
+  const loadPlaylistItems = useCallback(
+    (id: string, pageToken?: string | null) =>
+      withAck<YouTubePlaylistItemsResult>((socket, callback) =>
+        socket.emit("host:playlist-items", { id, pageToken }, callback)),
+    [withAck],
+  );
   const selectTrack = useCallback(
     (track: YouTubeTrack) =>
       withAck((socket, callback) => socket.emit("host:track-select", track, callback)),
@@ -123,6 +156,11 @@ export function useGameSocket(sessionToken: string | null) {
     resetMatch,
     removePlayer,
     youtubeSearch,
+    unlockPlaylistAdmin,
+    listPlaylists,
+    addPlaylist,
+    deletePlaylist,
+    loadPlaylistItems,
     selectTrack,
     setMusicState,
   };

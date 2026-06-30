@@ -18,3 +18,17 @@ model PlayerProfile {
 
   @@map("player_profiles")
 }
+
+model YouTubePlaylist {
+  id                String    @id @default(uuid())
+  youtubePlaylistId String    @unique @map("youtube_playlist_id")
+  title             String    @db.VarChar(160)
+  sourceUrl         String    @map("source_url")
+  thumbnailUrl      String?   @map("thumbnail_url")
+  itemCount         Int?      @map("item_count")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  lastSyncedAt      DateTime? @map("last_synced_at")
+
+  @@map("youtube_playlists")
+}

@@ -13,6 +13,7 @@ import type {
   YouTubeTrack,
 } from "../shared/types";
 import { GameRoom } from "./game-room";
+import { createPlaylistStore } from "./playlist-store";
 import { createProfileStore } from "./profile-store";
 import { createSessionToken, verifySessionToken } from "./session";
 import { validateTelegramInitData } from "./telegram";
@@ -25,6 +26,7 @@ const sessionSecret = process.env.SESSION_SECRET ?? "geeksgame-local-development
 const botToken = process.env.BOT_TOKEN;
 const youtubeApiKey = process.env.YOUTUBE_API_KEY;
 const youtubeMockSearch = process.env.YOUTUBE_MOCK_SEARCH === "true";
+const hostAdminPin = process.env.HOST_ADMIN_PIN;
 
 if (isProduction && !process.env.SESSION_SECRET) {
   console.warn("SESSION_SECRET is not configured; set it before enabling Telegram players.");
@@ -34,6 +36,9 @@ if (isProduction && !botToken) {
 }
 if (isProduction && !youtubeApiKey) {
   console.warn("YOUTUBE_API_KEY is not configured; host YouTube search is disabled.");
+}
+if (isProduction && !hostAdminPin) {
+  console.warn("HOST_ADMIN_PIN is not configured; saved playlist editing is disabled.");
 }
 
 const app = express();
@@ -48,7 +53,9 @@ const io = new Server<ClientToServerEvents, ServerToClientEvents, Record<string,
 );
 const room = new GameRoom();
 const profiles = createProfileStore();
+const playlists = createPlaylistStore();
 const youtubeSearch = new YouTubeSearchService({ apiKey: youtubeApiKey, mock: youtubeMockSearch });
+const playlistAdmins = new Set<string>();
 const nameSchema = z.string().trim().min(2).max(24);
 const trackSchema = z.object({
   videoId: z.string().trim().min(3).max(64),
@@ -61,6 +68,14 @@ const musicPlaybackSchema = z.union([
   z.literal("playing"),
   z.literal("paused"),
 ]) satisfies z.ZodType<MusicPlayback>;
+const playlistAddSchema = z.object({
+  url: z.string().trim().min(10).max(500),
+  title: z.string().trim().min(1).max(80).nullish(),
+});
+const playlistItemsSchema = z.object({
+  id: z.string().trim().min(1).max(80),
+  pageToken: z.string().trim().min(1).max(256).nullish(),
+});
 
 app.use(express.json({ limit: "32kb" }));
 
@@ -201,6 +216,7 @@ io.on("connection", (socket) => {
   });
   socket.on("role:release", (callback) => {
     const result = room.release(socket.id);
+    playlistAdmins.delete(socket.id);
     callback(result);
     broadcastState();
   });
@@ -257,6 +273,119 @@ io.on("connection", (socket) => {
       });
     }
   });
+  socket.on("host:playlist-admin-unlock", (payload, callback) => {
+    if (!room.isHostSocket(socket.id)) {
+      callback({ ok: false, message: "Только ведущий открывает админку плейлистов" });
+      return;
+    }
+    const parsed = z.object({ pin: z.string().trim().min(1).max(80) }).safeParse(payload);
+    if (!parsed.success) {
+      callback({ ok: false, message: "Введите PIN" });
+      return;
+    }
+    if (!hostAdminPin) {
+      callback({ ok: false, message: "HOST_ADMIN_PIN не настроен на сервере" });
+      return;
+    }
+    if (parsed.data.pin !== hostAdminPin) {
+      callback({ ok: false, message: "Неверный PIN" });
+      return;
+    }
+    playlistAdmins.add(socket.id);
+    callback({ ok: true, unlocked: true });
+  });
+  socket.on("host:playlists:list", async (callback) => {
+    if (!room.isHostSocket(socket.id)) {
+      callback({ ok: false, message: "Только ведущий видит плейлисты" });
+      return;
+    }
+    try {
+      callback({ ok: true, playlists: await playlists.list() });
+    } catch (error) {
+      console.error("Playlist list failed", error);
+      callback({ ok: false, message: "Не удалось загрузить плейлисты" });
+    }
+  });
+  socket.on("host:playlists:add", async (payload, callback) => {
+    if (!room.isHostSocket(socket.id)) {
+      callback({ ok: false, message: "Только ведущий добавляет плейлисты" });
+      return;
+    }
+    if (!playlistAdmins.has(socket.id)) {
+      callback({ ok: false, message: "Сначала откройте админку плейлистов по PIN" });
+      return;
+    }
+    const parsed = playlistAddSchema.safeParse(payload);
+    if (!parsed.success) {
+      callback({ ok: false, message: "Вставьте ссылку на YouTube-плейлист" });
+      return;
+    }
+    try {
+      const metadata = await youtubeSearch.resolvePlaylist(parsed.data.url);
+      await playlists.upsert({
+        ...metadata,
+        title: parsed.data.title?.trim() || metadata.title,
+      });
+      callback({ ok: true, playlists: await playlists.list() });
+    } catch (error) {
+      console.error("Playlist add failed", error);
+      callback({
+        ok: false,
+        message: error instanceof Error ? error.message : "Не удалось сохранить плейлист",
+      });
+    }
+  });
+  socket.on("host:playlists:delete", async (id, callback) => {
+    if (!room.isHostSocket(socket.id)) {
+      callback({ ok: false, message: "Только ведущий удаляет плейлисты" });
+      return;
+    }
+    if (!playlistAdmins.has(socket.id)) {
+      callback({ ok: false, message: "Сначала откройте админку плейлистов по PIN" });
+      return;
+    }
+    const parsed = z.string().trim().min(1).max(80).safeParse(id);
+    if (!parsed.success) {
+      callback({ ok: false, message: "Некорректный плейлист" });
+      return;
+    }
+    try {
+      await playlists.delete(parsed.data);
+      callback({ ok: true, playlists: await playlists.list() });
+    } catch (error) {
+      console.error("Playlist delete failed", error);
+      callback({ ok: false, message: "Не удалось удалить плейлист" });
+    }
+  });
+  socket.on("host:playlist-items", async (payload, callback) => {
+    if (!room.isHostSocket(socket.id)) {
+      callback({ ok: false, message: "Только ведущий открывает плейлисты" });
+      return;
+    }
+    const parsed = playlistItemsSchema.safeParse(payload);
+    if (!parsed.success) {
+      callback({ ok: false, message: "Некорректный плейлист" });
+      return;
+    }
+    try {
+      const playlist = await playlists.get(parsed.data.id);
+      if (!playlist) {
+        callback({ ok: false, message: "Плейлист не найден" });
+        return;
+      }
+      const response = await youtubeSearch.playlistItems(
+        playlist.youtubePlaylistId,
+        parsed.data.pageToken ?? null,
+      );
+      callback({ ok: true, results: response.results, nextPageToken: response.nextPageToken });
+    } catch (error) {
+      console.error("Playlist items failed", error);
+      callback({
+        ok: false,
+        message: error instanceof Error ? error.message : "Не удалось загрузить треки плейлиста",
+      });
+    }
+  });
   socket.on("host:track-select", (payload, callback) => {
     const parsed = trackSchema.safeParse(payload);
     const result = parsed.success
@@ -274,6 +403,7 @@ io.on("connection", (socket) => {
     broadcastState();
   });
   socket.on("disconnect", () => {
+    playlistAdmins.delete(socket.id);
     room.disconnect(socket.id);
     broadcastState();
   });

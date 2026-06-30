@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
-import type { AuthResponse, GameState, MusicPlayback, PlayerView, YouTubeTrack } from "../shared/types";
+import type { AuthResponse, GameState, MusicPlayback, PlayerView, YouTubePlaylist, YouTubeTrack } from "../shared/types";
 import { useGameSocket } from "./use-game-socket";
 
 interface AppConfig {
@@ -431,17 +431,39 @@ function HostScreen({
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchMessage, setSearchMessage] = useState<string | null>(null);
   const [nextPageToken, setNextPageToken] = useState<string | null>(null);
+  const [resultMode, setResultMode] = useState<"search" | "playlist" | null>(null);
+  const [playlists, setPlaylists] = useState<YouTubePlaylist[]>([]);
+  const [playlistAdminUnlocked, setPlaylistAdminUnlocked] = useState(false);
+  const [playlistPin, setPlaylistPin] = useState("");
+  const [playlistUrl, setPlaylistUrl] = useState("");
+  const [playlistTitle, setPlaylistTitle] = useState("");
+  const [playlistMessage, setPlaylistMessage] = useState<string | null>(null);
+  const [playlistLoading, setPlaylistLoading] = useState(false);
+  const [selectedPlaylist, setSelectedPlaylist] = useState<YouTubePlaylist | null>(null);
   const activeSearchRef = useRef("");
+  const activePlaylistRef = useRef("");
   const setMusicState = game.setMusicState;
+  const listPlaylists = game.listPlaylists;
   const handleMusicState = useCallback((playback: MusicPlayback) => {
     void setMusicState(playback);
   }, [setMusicState]);
+  useEffect(() => {
+    let cancelled = false;
+    void listPlaylists().then((response) => {
+      if (!cancelled && response.ok) setPlaylists(response.playlists ?? []);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [listPlaylists]);
   const searchTracks = async (searchQuery: string, pageToken?: string | null) => {
     const trimmedQuery = searchQuery.trim();
     if (trimmedQuery.length < 2) return;
     const isNextPage = Boolean(pageToken);
     setQuery(trimmedQuery);
     activeSearchRef.current = trimmedQuery;
+    setResultMode("search");
+    if (!isNextPage) setSelectedPlaylist(null);
     if (isNextPage) setLoadingMore(true);
     else {
       setSearching(true);
@@ -465,6 +487,74 @@ function HostScreen({
       setSearchMessage(response.message ?? "Не удалось найти песню");
     }
   };
+  const loadPlaylistTracks = async (playlist: YouTubePlaylist, pageToken?: string | null) => {
+    const isNextPage = Boolean(pageToken);
+    activePlaylistRef.current = playlist.id;
+    setSelectedPlaylist(playlist);
+    setResultMode("playlist");
+    setSearchMessage(null);
+    if (isNextPage) setLoadingMore(true);
+    else {
+      setPlaylistLoading(true);
+      setNextPageToken(null);
+      setResults([]);
+    }
+    const response = await game.loadPlaylistItems(playlist.id, pageToken);
+    if (activePlaylistRef.current !== playlist.id) return;
+    if (isNextPage) setLoadingMore(false);
+    else setPlaylistLoading(false);
+    if (response.ok) {
+      const nextResults = response.results ?? [];
+      setResults((currentResults) => {
+        if (!isNextPage) return nextResults;
+        const seen = new Set(currentResults.map((item) => item.videoId));
+        return [...currentResults, ...nextResults.filter((item) => !seen.has(item.videoId))];
+      });
+      setNextPageToken(response.nextPageToken ?? null);
+      if (!response.results?.length) setSearchMessage("В плейлисте нет доступных треков");
+    } else {
+      setSearchMessage(response.message ?? "Не удалось загрузить плейлист");
+    }
+  };
+  const unlockPlaylistAdmin = async (event: FormEvent) => {
+    event.preventDefault();
+    const response = await game.unlockPlaylistAdmin(playlistPin);
+    if (response.ok) {
+      setPlaylistAdminUnlocked(true);
+      setPlaylistPin("");
+      setPlaylistMessage("Админка плейлистов открыта");
+    } else {
+      setPlaylistMessage(response.message ?? "Не удалось открыть админку");
+    }
+  };
+  const addPlaylist = async (event: FormEvent) => {
+    event.preventDefault();
+    setPlaylistMessage(null);
+    const response = await game.addPlaylist(playlistUrl, playlistTitle || null);
+    if (response.ok) {
+      setPlaylists(response.playlists ?? []);
+      setPlaylistUrl("");
+      setPlaylistTitle("");
+      setPlaylistMessage("Плейлист сохранён");
+    } else {
+      setPlaylistMessage(response.message ?? "Не удалось сохранить плейлист");
+    }
+  };
+  const deletePlaylist = async (playlist: YouTubePlaylist) => {
+    if (!window.confirm(`Удалить плейлист ${playlist.title}?`)) return;
+    const response = await game.deletePlaylist(playlist.id);
+    if (response.ok) {
+      setPlaylists(response.playlists ?? []);
+      if (selectedPlaylist?.id === playlist.id) {
+        setSelectedPlaylist(null);
+        setResultMode(null);
+        setResults([]);
+        setNextPageToken(null);
+      }
+    } else {
+      setPlaylistMessage(response.message ?? "Не удалось удалить плейлист");
+    }
+  };
   const submitSearch = (event: FormEvent) => {
     event.preventDefault();
     void searchTracks(query);
@@ -486,15 +576,31 @@ function HostScreen({
             results={results}
             searching={searching}
             loadingMore={loadingMore}
+            playlistLoading={playlistLoading}
             hasMoreResults={Boolean(nextPageToken)}
             searchMessage={searchMessage}
             youtubeConfigured={youtubeConfigured}
+            playlists={playlists}
+            playlistAdminUnlocked={playlistAdminUnlocked}
+            playlistPin={playlistPin}
+            playlistUrl={playlistUrl}
+            playlistTitle={playlistTitle}
+            playlistMessage={playlistMessage}
+            selectedPlaylistId={selectedPlaylist?.id ?? null}
             onQueryChange={setQuery}
             onSearch={submitSearch}
             onQuickSearch={(searchQuery) => void searchTracks(searchQuery)}
+            onPlaylistPinChange={setPlaylistPin}
+            onPlaylistUrlChange={setPlaylistUrl}
+            onPlaylistTitleChange={setPlaylistTitle}
+            onPlaylistAdminUnlock={unlockPlaylistAdmin}
+            onPlaylistAdd={addPlaylist}
+            onPlaylistOpen={(playlist) => void loadPlaylistTracks(playlist)}
+            onPlaylistDelete={(playlist) => void deletePlaylist(playlist)}
             onLoadMore={() => {
               if (!nextPageToken || searching || loadingMore) return;
-              void searchTracks(query, nextPageToken);
+              if (resultMode === "playlist" && selectedPlaylist) void loadPlaylistTracks(selectedPlaylist, nextPageToken);
+              else void searchTracks(query, nextPageToken);
             }}
             onSelectTrack={(track) => {
               void game.selectTrack(track);
@@ -560,12 +666,27 @@ function HostMusicPanel({
   results,
   searching,
   loadingMore,
+  playlistLoading,
   hasMoreResults,
   searchMessage,
   youtubeConfigured,
+  playlists,
+  playlistAdminUnlocked,
+  playlistPin,
+  playlistUrl,
+  playlistTitle,
+  playlistMessage,
+  selectedPlaylistId,
   onQueryChange,
   onSearch,
   onQuickSearch,
+  onPlaylistPinChange,
+  onPlaylistUrlChange,
+  onPlaylistTitleChange,
+  onPlaylistAdminUnlock,
+  onPlaylistAdd,
+  onPlaylistOpen,
+  onPlaylistDelete,
   onLoadMore,
   onSelectTrack,
   onMusicState,
@@ -575,12 +696,27 @@ function HostMusicPanel({
   results: YouTubeTrack[];
   searching: boolean;
   loadingMore: boolean;
+  playlistLoading: boolean;
   hasMoreResults: boolean;
   searchMessage: string | null;
   youtubeConfigured: boolean;
+  playlists: YouTubePlaylist[];
+  playlistAdminUnlocked: boolean;
+  playlistPin: string;
+  playlistUrl: string;
+  playlistTitle: string;
+  playlistMessage: string | null;
+  selectedPlaylistId: string | null;
   onQueryChange: (query: string) => void;
   onSearch: (event: FormEvent) => void;
   onQuickSearch: (query: string) => void;
+  onPlaylistPinChange: (pin: string) => void;
+  onPlaylistUrlChange: (url: string) => void;
+  onPlaylistTitleChange: (title: string) => void;
+  onPlaylistAdminUnlock: (event: FormEvent) => void;
+  onPlaylistAdd: (event: FormEvent) => void;
+  onPlaylistOpen: (playlist: YouTubePlaylist) => void;
+  onPlaylistDelete: (playlist: YouTubePlaylist) => void;
   onLoadMore: () => void;
   onSelectTrack: (track: YouTubeTrack) => void;
   onMusicState: (playback: MusicPlayback) => void;
@@ -645,6 +781,24 @@ function HostMusicPanel({
               onPlaybackChange={onMusicState}
             />
           </div>
+          <PlaylistPanel
+            playlists={playlists}
+            adminUnlocked={playlistAdminUnlocked}
+            pin={playlistPin}
+            url={playlistUrl}
+            title={playlistTitle}
+            message={playlistMessage}
+            selectedPlaylistId={selectedPlaylistId}
+            loading={playlistLoading}
+            youtubeConfigured={youtubeConfigured}
+            onPinChange={onPlaylistPinChange}
+            onUrlChange={onPlaylistUrlChange}
+            onTitleChange={onPlaylistTitleChange}
+            onUnlock={onPlaylistAdminUnlock}
+            onAdd={onPlaylistAdd}
+            onOpen={onPlaylistOpen}
+            onDelete={onPlaylistDelete}
+          />
           {searchMessage ? <p className="music-search-message">{searchMessage}</p> : null}
           {results.length ? (
             <div className="music-results">
@@ -692,6 +846,116 @@ function HostMusicPanel({
           )}
         </div>
       </div>
+    </section>
+  );
+}
+
+function PlaylistPanel({
+  playlists,
+  adminUnlocked,
+  pin,
+  url,
+  title,
+  message,
+  selectedPlaylistId,
+  loading,
+  youtubeConfigured,
+  onPinChange,
+  onUrlChange,
+  onTitleChange,
+  onUnlock,
+  onAdd,
+  onOpen,
+  onDelete,
+}: {
+  playlists: YouTubePlaylist[];
+  adminUnlocked: boolean;
+  pin: string;
+  url: string;
+  title: string;
+  message: string | null;
+  selectedPlaylistId: string | null;
+  loading: boolean;
+  youtubeConfigured: boolean;
+  onPinChange: (pin: string) => void;
+  onUrlChange: (url: string) => void;
+  onTitleChange: (title: string) => void;
+  onUnlock: (event: FormEvent) => void;
+  onAdd: (event: FormEvent) => void;
+  onOpen: (playlist: YouTubePlaylist) => void;
+  onDelete: (playlist: YouTubePlaylist) => void;
+}) {
+  return (
+    <section className={`playlist-panel ${playlists.length ? "has-playlists" : "is-empty"} ${adminUnlocked ? "is-unlocked" : "is-locked"}`}>
+      <div className="playlist-panel-head">
+        <div>
+          <span>Мои плейлисты</span>
+          <strong>{playlists.length ? `${playlists.length} сохранено` : "добавьте YouTube playlist"}</strong>
+        </div>
+        {loading ? <small>загружаем треки...</small> : null}
+      </div>
+      {!adminUnlocked ? (
+        <form className="playlist-admin-form" onSubmit={onUnlock}>
+          <input
+            value={pin}
+            onChange={(event) => onPinChange(event.target.value)}
+            placeholder="HOST_ADMIN_PIN"
+            aria-label="PIN админки плейлистов"
+            type="password"
+            autoComplete="off"
+          />
+          <button type="submit">Открыть плейлисты</button>
+        </form>
+      ) : (
+        <form className="playlist-add-form" onSubmit={onAdd}>
+          <input
+            value={url}
+            onChange={(event) => onUrlChange(event.target.value)}
+            placeholder="Ссылка на YouTube playlist"
+            aria-label="Ссылка на YouTube плейлист"
+            disabled={!youtubeConfigured}
+          />
+          <input
+            value={title}
+            onChange={(event) => onTitleChange(event.target.value)}
+            placeholder="Название, если нужно"
+            aria-label="Название плейлиста"
+            disabled={!youtubeConfigured}
+          />
+          <button type="submit" disabled={!youtubeConfigured || url.trim().length < 10}>
+            Сохранить плейлист
+          </button>
+        </form>
+      )}
+      {message ? <p className="playlist-message">{message}</p> : null}
+      {playlists.length ? (
+        <div className="playlist-grid">
+          {playlists.map((playlist) => (
+            <article
+              className={`playlist-card-wrap ${selectedPlaylistId === playlist.id ? "is-selected" : ""}`}
+              key={playlist.id}
+            >
+              <button className="playlist-card" type="button" onClick={() => onOpen(playlist)}>
+                {playlist.thumbnailUrl ? <img src={playlist.thumbnailUrl} alt="" /> : <span>▶</span>}
+                <strong>{playlist.title}</strong>
+                <small>{playlist.itemCount === null ? "треков пока не знаем" : `${playlist.itemCount} треков`}</small>
+              </button>
+              {adminUnlocked ? (
+                <button
+                  className="playlist-delete"
+                  type="button"
+                  aria-label={`Удалить плейлист ${playlist.title}`}
+                  onClick={() => onDelete(playlist)}
+                >
+                  ×
+                </button>
+              ) : null}
+            </article>
+          ))}
+        </div>
+      ) : (
+        <p className="playlist-empty">Пока нет сохранённых плейлистов. Вставьте public или unlisted ссылку.</p>
+      )}
     </section>
   );
 }

@@ -127,6 +127,22 @@ test("host and two players can run a scoring round", async ({ browser }) => {
   await expect(host.locator(".music-results button:not(.music-load-more)")).toHaveCount(24);
   await expect(host.locator(".music-results button.is-selected")).toHaveCount(1);
   await expect(host.locator(".track-ticker").getByText("чоко · тестовый трек")).toBeVisible();
+
+  await host.getByLabel("PIN админки плейлистов").fill("1234");
+  await host.getByRole("button", { name: "Открыть плейлисты" }).click();
+  await expect(host.getByText("Админка плейлистов открыта")).toBeVisible();
+  await host.getByLabel("Ссылка на YouTube плейлист").fill("https://www.youtube.com/playlist?list=PLgeeksgame12345");
+  await host.getByLabel("Название плейлиста").fill("Старые хиты");
+  await host.getByRole("button", { name: "Сохранить плейлист" }).click();
+  await expect(host.locator(".playlist-card").filter({ hasText: "Старые хиты" })).toBeVisible();
+  await host.locator(".playlist-card").filter({ hasText: "Старые хиты" }).click();
+  await expect(host.locator(".music-results button:not(.music-load-more)")).toHaveCount(24);
+  await expect(host.locator(".music-load-more")).toBeVisible();
+  await host.locator(".music-load-more").click();
+  await expect(host.locator(".music-results button:not(.music-load-more)")).toHaveCount(48);
+  await host.locator(".music-results button:not(.music-load-more)").first().click();
+  await expect(host.locator(".track-ticker").getByText("PLgeeksgame12345 · плейлист трек 1")).toBeVisible();
+
   await host.getByRole("button", { name: "Играть" }).click();
   await expect.poll(() => host.evaluate(() => window.__ytLastAction)).toBe("play");
 

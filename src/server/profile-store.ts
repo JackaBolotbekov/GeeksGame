@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { getPrismaClient } from "./prisma";
 
 export interface StoredProfile {
   telegramUserId: string;
@@ -69,5 +70,5 @@ export function createProfileStore(): ProfileStore {
     console.warn("DATABASE_URL is not configured; player profiles use temporary memory storage.");
     return new MemoryProfileStore();
   }
-  return new PrismaProfileStore(new PrismaClient());
+  return new PrismaProfileStore(getPrismaClient());
 }
