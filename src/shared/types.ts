@@ -35,7 +35,7 @@ export interface YouTubeTrack {
 
 export interface AnswerAttempt {
   userId: string;
-  attemptNumber: 1 | 2;
+  attemptNumber: number;
   startedAt: number;
   deadlineAt: number;
   previousWrongUserIds: string[];

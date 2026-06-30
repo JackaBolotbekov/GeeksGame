@@ -847,6 +847,39 @@ button:disabled {
   margin: 3px 0 0;
 }
 
+.host-stage-game .host-cards[data-player-count="3"],
+.host-stage-game .host-cards[data-player-count="4"] {
+  gap: 10px;
+}
+
+.host-stage-game .host-cards[data-player-count="3"] .host-player-main,
+.host-stage-game .host-cards[data-player-count="4"] .host-player-main {
+  gap: 12px;
+  padding: 14px;
+}
+
+.host-stage-game .host-cards[data-player-count="3"] .avatar.is-large,
+.host-stage-game .host-cards[data-player-count="4"] .avatar.is-large {
+  width: 64px;
+  height: 64px;
+}
+
+.host-stage-game .host-cards[data-player-count="3"] .host-player-main h3,
+.host-stage-game .host-cards[data-player-count="4"] .host-player-main h3 {
+  font-size: clamp(18px, 2vw, 23px);
+}
+
+.host-stage-game .host-cards[data-player-count="3"] .score-value strong,
+.host-stage-game .host-cards[data-player-count="4"] .score-value strong {
+  font-size: clamp(34px, 3vw, 46px);
+}
+
+.host-stage-game .host-cards[data-player-count="3"] .score-actions button,
+.host-stage-game .host-cards[data-player-count="4"] .score-actions button {
+  min-height: 54px;
+  font-size: clamp(22px, 2.4vw, 32px);
+}
+
 .micro-label {
   color: #77787c;
 }
@@ -1426,6 +1459,12 @@ button:disabled {
     gap: clamp(8px, 1.3vh, 12px);
   }
 
+  .host-screen .host-cards[data-player-count="3"],
+  .host-screen .host-cards[data-player-count="4"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(7px, 1.1vh, 9px);
+  }
+
   .host-player-card {
     min-height: 0;
     display: flex;
@@ -1462,6 +1501,18 @@ button:disabled {
     gap: clamp(8px, 1.4vh, 12px);
   }
 
+  .scoreboard[data-player-count="3"],
+  .scoreboard[data-player-count="4"] {
+    gap: clamp(5px, 0.9vh, 8px);
+  }
+
+  .scoreboard[data-player-count="3"] .score-row,
+  .scoreboard[data-player-count="4"] .score-row {
+    grid-template-columns: 18px auto minmax(0, 1fr) auto;
+    gap: 7px;
+    padding: clamp(7px, 1.1vh, 9px) 9px;
+  }
+
   .player-screen .scoreboard {
     flex: 0 1 clamp(160px, 25vh, 220px);
     min-height: 0;
@@ -1484,6 +1535,12 @@ button:disabled {
     border-width: 2px;
   }
 
+  .scoreboard[data-player-count="3"] .avatar,
+  .scoreboard[data-player-count="4"] .avatar {
+    width: clamp(34px, 9vw, 42px);
+    height: clamp(34px, 9vw, 42px);
+  }
+
   .avatar.is-large {
     width: clamp(68px, 19vw, 88px);
     height: clamp(68px, 19vw, 88px);
@@ -1502,12 +1559,32 @@ button:disabled {
     font-size: clamp(8px, 2.5vw, 10px);
   }
 
+  .scoreboard[data-player-count="3"] .score-name strong,
+  .scoreboard[data-player-count="4"] .score-name strong {
+    font-size: clamp(14px, 4vw, 17px);
+  }
+
+  .scoreboard[data-player-count="3"] .score-name span,
+  .scoreboard[data-player-count="4"] .score-name span {
+    font-size: clamp(7px, 2vw, 9px);
+  }
+
   .score-value {
     min-width: 44px;
   }
 
+  .scoreboard[data-player-count="3"] .score-value,
+  .scoreboard[data-player-count="4"] .score-value {
+    min-width: 34px;
+  }
+
   .score-value strong {
     font-size: clamp(38px, 12vw, 52px);
+  }
+
+  .scoreboard[data-player-count="3"] .score-value strong,
+  .scoreboard[data-player-count="4"] .score-value strong {
+    font-size: clamp(26px, 7vw, 34px);
   }
 
   .host-player-main {
@@ -1516,6 +1593,31 @@ button:disabled {
     grid-template-columns: auto minmax(0, 1fr) auto;
     gap: clamp(10px, 3vw, 16px);
     padding: clamp(16px, 3vh, 26px) clamp(13px, 4vw, 22px);
+  }
+
+  .host-screen .host-cards[data-player-count="3"] .host-player-main,
+  .host-screen .host-cards[data-player-count="4"] .host-player-main {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 7px;
+    padding: 9px;
+  }
+
+  .host-screen .host-cards[data-player-count="3"] .avatar.is-large,
+  .host-screen .host-cards[data-player-count="4"] .avatar.is-large {
+    width: clamp(38px, 10vw, 46px);
+    height: clamp(38px, 10vw, 46px);
+  }
+
+  .host-screen .host-cards[data-player-count="3"] .host-player-main .score-value,
+  .host-screen .host-cards[data-player-count="4"] .host-player-main .score-value {
+    grid-column: 1 / -1;
+    min-width: 0;
+    text-align: left;
+  }
+
+  .host-screen .host-cards[data-player-count="3"] .host-player-main .score-value strong,
+  .host-screen .host-cards[data-player-count="4"] .host-player-main .score-value strong {
+    font-size: clamp(26px, 8vw, 34px);
   }
 
   .host-player-main .score-value strong {
@@ -1535,6 +1637,17 @@ button:disabled {
   .score-actions button {
     min-height: clamp(68px, 9vh, 88px);
     font-size: clamp(28px, 9vw, 40px);
+  }
+
+  .host-screen .host-cards[data-player-count="3"] .score-actions button,
+  .host-screen .host-cards[data-player-count="4"] .score-actions button {
+    min-height: clamp(36px, 5.2vh, 44px);
+    font-size: clamp(18px, 5.5vw, 24px);
+  }
+
+  .host-screen .host-cards[data-player-count="3"] .score-actions small,
+  .host-screen .host-cards[data-player-count="4"] .score-actions small {
+    display: none;
   }
 
   .score-actions small {

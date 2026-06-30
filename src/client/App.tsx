@@ -374,7 +374,7 @@ function RoleScreen({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -18 }}
     >
-      <div className="eyebrow">живая игра · 2 игрока · 1 ведущий</div>
+      <div className="eyebrow">живая игра · до 4 игроков · 1 ведущий</div>
       <h1>Угадай<br /><em>мелодию</em></h1>
       <p className="lead">Первый жмёт. Ведущий решает. Таблица переворачивается на глазах.</p>
       <div className="role-grid">
@@ -473,7 +473,7 @@ function HostScreen({
             </p>
             <AnswerTimer attempt={state.answerAttempt} />
           </div>
-          <div className="host-cards">
+          <div className="host-cards" data-player-count={state.players.length}>
             {state.players.length ? state.players.map((player) => (
               <HostPlayerCard
                 key={player.userId}
@@ -891,7 +891,7 @@ function ScreenFrame({
 
 function Scoreboard({ state }: { state: GameState }) {
   return (
-    <motion.div className="scoreboard" layout>
+    <motion.div className="scoreboard" layout data-player-count={state.players.length}>
       {state.players.length ? state.players.map((player, index) => (
         <motion.article
           className={`score-row ${player.isBuzzed ? "is-buzzed" : ""} ${player.isAnswering ? "is-answering" : ""} ${player.hasAttemptedThisRound && !player.isAnswering ? "has-attempted" : ""}`}
@@ -968,7 +968,7 @@ function EmptyPlayers() {
     <div className="empty-players">
       <span>♪</span>
       <strong>Ждём игроков</strong>
-      <p>Два первых участника появятся здесь автоматически.</p>
+      <p>До четырёх участников появятся здесь автоматически. Остальные попадут в очередь.</p>
     </div>
   );
 }

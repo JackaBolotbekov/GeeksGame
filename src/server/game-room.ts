@@ -19,6 +19,7 @@ interface Participant {
 const ok = (): ActionResult => ({ ok: true });
 const fail = (message: string): ActionResult => ({ ok: false, message });
 const ANSWER_WINDOW_MS = 10_000;
+const MAX_PLAYERS = 4;
 
 export class GameRoom {
   private hostSocketId: string | null = null;
@@ -61,7 +62,7 @@ export class GameRoom {
       avatarUrl: identity.avatarUrl,
       score: 0,
     };
-    if (this.players.length < 2) this.players.push(participant);
+    if (this.players.length < MAX_PLAYERS) this.players.push(participant);
     else this.queue.push(participant);
     return ok();
   }
@@ -117,13 +118,16 @@ export class GameRoom {
       return ok();
     }
 
-    if (this.answerAttempt.attemptNumber === 1) {
-      const nextPlayer = this.players.find((participant) => participant.userId !== userId);
-      if (nextPlayer) {
-        this.buzzerUserId = nextPlayer.userId;
-        this.answerAttempt = this.createAnswerAttempt(nextPlayer.userId, 2, [userId]);
-        return ok();
-      }
+    const previousWrongUserIds = [...this.answerAttempt.previousWrongUserIds, userId];
+    const nextPlayer = this.players.find((participant) => !previousWrongUserIds.includes(participant.userId));
+    if (nextPlayer) {
+      this.buzzerUserId = nextPlayer.userId;
+      this.answerAttempt = this.createAnswerAttempt(
+        nextPlayer.userId,
+        previousWrongUserIds.length + 1,
+        previousWrongUserIds,
+      );
+      return ok();
     }
 
     this.nextRoundInternal();
@@ -231,8 +235,9 @@ export class GameRoom {
   }
 
   private promoteQueue(): void {
-    const next = this.queue.shift();
-    if (next) {
+    while (this.players.length < MAX_PLAYERS) {
+      const next = this.queue.shift();
+      if (!next) return;
       next.score = 0;
       this.players.push(next);
       this.players.sort((left, right) => right.score - left.score);
@@ -241,7 +246,7 @@ export class GameRoom {
 
   private createAnswerAttempt(
     userId: string,
-    attemptNumber: 1 | 2,
+    attemptNumber: number,
     previousWrongUserIds: string[],
   ): NonNullable<GameState["answerAttempt"]> {
     const startedAt = Date.now();

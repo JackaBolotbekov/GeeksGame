@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { SessionIdentity } from "../src/shared/types";
 import { GameRoom } from "../src/server/game-room";
+import type { SessionIdentity } from "../src/shared/types";
 
 const player = (id: string, name: string): SessionIdentity => ({
   sub: id,
@@ -12,8 +12,8 @@ const player = (id: string, name: string): SessionIdentity => ({
 function setup() {
   const room = new GameRoom();
   room.claim("host", null, "host");
-  room.claim("one-socket", player("one", "Чоко"), "player");
-  room.claim("two-socket", player("two", "Медер"), "player");
+  room.claim("one-socket", player("one", "Choko"), "player");
+  room.claim("two-socket", player("two", "Meder"), "player");
   return room;
 }
 
@@ -49,6 +49,37 @@ describe("GameRoom", () => {
     expect(state.round).toBe(2);
   });
 
+  it("passes wrong answers through every active player before closing the round", () => {
+    const room = setup();
+    room.claim("three-socket", player("three", "Aliya"), "player");
+    room.claim("four-socket", player("four", "Ermek"), "player");
+
+    room.pressBuzzer("one-socket");
+    room.score("host", "one", -1);
+    let state = room.getState("host");
+    expect(state.answerAttempt?.userId).toBe("two");
+    expect(state.answerAttempt?.attemptNumber).toBe(2);
+    expect(state.answerAttempt?.previousWrongUserIds).toEqual(["one"]);
+
+    room.score("host", "two", -1);
+    state = room.getState("host");
+    expect(state.answerAttempt?.userId).toBe("three");
+    expect(state.answerAttempt?.attemptNumber).toBe(3);
+    expect(state.answerAttempt?.previousWrongUserIds).toEqual(["one", "two"]);
+
+    room.score("host", "three", -1);
+    state = room.getState("host");
+    expect(state.answerAttempt?.userId).toBe("four");
+    expect(state.answerAttempt?.attemptNumber).toBe(4);
+    expect(state.answerAttempt?.previousWrongUserIds).toEqual(["one", "two", "three"]);
+
+    room.score("host", "four", -1);
+    state = room.getState("host");
+    expect(state.answerAttempt).toBeNull();
+    expect(state.buzzerUserId).toBeNull();
+    expect(state.round).toBe(2);
+  });
+
   it("scores a correct answer and starts a new round", () => {
     const room = setup();
     room.pressBuzzer("one-socket");
@@ -67,17 +98,30 @@ describe("GameRoom", () => {
     expect(room.getState("host").players.map((item) => item.userId)).toEqual(["two", "one"]);
   });
 
+  it("allows four active players and queues the fifth", () => {
+    const room = setup();
+    room.claim("three-socket", player("three", "Aliya"), "player");
+    room.claim("four-socket", player("four", "Ermek"), "player");
+    room.claim("five-socket", player("five", "Nuray"), "player");
+
+    expect(room.getState("host").players.map((item) => item.userId)).toEqual(["one", "two", "three", "four"]);
+    expect(room.getState("three-socket").viewer.role).toBe("player");
+    expect(room.getState("four-socket").viewer.role).toBe("player");
+    expect(room.getState("five-socket").viewer.role).toBe("spectator");
+    expect(room.getState("five-socket").viewer.queuePosition).toBe(1);
+  });
+
   it("promotes the first queued spectator when a player disconnects", () => {
     const room = setup();
-    room.claim("three-socket", player("three", "Алия"), "player");
-    room.claim("four-socket", player("four", "Эрмек"), "player");
-    expect(room.getState("three-socket").viewer.queuePosition).toBe(1);
+    room.claim("three-socket", player("three", "Aliya"), "player");
+    room.claim("four-socket", player("four", "Ermek"), "player");
+    room.claim("five-socket", player("five", "Nuray"), "player");
 
     room.disconnect("one-socket");
-    const promoted = room.getState("three-socket");
+    const promoted = room.getState("five-socket");
     expect(promoted.viewer.role).toBe("player");
-    expect(promoted.players.some((item) => item.userId === "three")).toBe(true);
-    expect(room.getState("four-socket").viewer.queuePosition).toBe(1);
+    expect(promoted.players.some((item) => item.userId === "five")).toBe(true);
+    expect(promoted.players).toHaveLength(4);
   });
 
   it("ends at ten points and blocks further score changes until reset", () => {
@@ -99,8 +143,8 @@ describe("GameRoom", () => {
     const room = setup();
     room.selectTrack("host", {
       videoId: "video",
-      title: "Песня",
-      channelTitle: "Канал",
+      title: "Song",
+      channelTitle: "Channel",
       thumbnailUrl: null,
     });
     room.setMusicPlayback("host", "playing");
@@ -113,14 +157,14 @@ describe("GameRoom", () => {
 
   it("does not let one identity occupy multiple player slots", () => {
     const room = new GameRoom();
-    expect(room.claim("one-socket", player("one", "Чоко"), "player").ok).toBe(true);
-    expect(room.claim("duplicate-socket", player("one", "Чоко"), "player").ok).toBe(false);
+    expect(room.claim("one-socket", player("one", "Choko"), "player").ok).toBe(true);
+    expect(room.claim("duplicate-socket", player("one", "Choko"), "player").ok).toBe(false);
     expect(room.getState("one-socket").players).toHaveLength(1);
   });
 
   it("keeps a player's place when the occupied host role claim fails", () => {
     const room = setup();
-    expect(room.claim("one-socket", player("one", "Чоко"), "host").ok).toBe(false);
+    expect(room.claim("one-socket", player("one", "Choko"), "host").ok).toBe(false);
     expect(room.getState("one-socket").viewer.role).toBe("player");
   });
 });

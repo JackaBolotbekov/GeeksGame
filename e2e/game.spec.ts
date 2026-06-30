@@ -136,10 +136,14 @@ test("standard mobile screens fit without vertical scrolling", async ({ browser 
   const hostContext = await browser.newContext(contextOptions);
   const firstContext = await browser.newContext(contextOptions);
   const secondContext = await browser.newContext(contextOptions);
+  const thirdContext = await browser.newContext(contextOptions);
+  const fourthContext = await browser.newContext(contextOptions);
   const spectatorContext = await browser.newContext(contextOptions);
   const host = await hostContext.newPage();
   const first = await firstContext.newPage();
   const second = await secondContext.newPage();
+  const third = await thirdContext.newPage();
+  const fourth = await fourthContext.newPage();
   const spectator = await spectatorContext.newPage();
 
   await host.goto("/");
@@ -171,17 +175,35 @@ test("standard mobile screens fit without vertical scrolling", async ({ browser 
   await expectMinimumHeight(host, ".host-player-card", 220);
   await expectNoVerticalScroll(host);
 
+  await third.goto("/");
+  await third.locator(".role-player").click();
+  await third.locator(".name-dialog input").fill("Aliya");
+  await third.locator(".primary-button").click();
+  await expect(third.locator(".buzzer")).toBeVisible();
+  await expectNoVerticalScroll(third);
+
+  await fourth.goto("/");
+  await fourth.locator(".role-player").click();
+  await fourth.locator(".name-dialog input").fill("Ermek");
+  await fourth.locator(".primary-button").click();
+  await expect(fourth.locator(".buzzer")).toBeVisible();
+  await expect(host.locator(".host-player-card")).toHaveCount(4);
+  await expectMinimumHeight(host, ".host-player-card", 100);
+  await expectNoVerticalScroll(host);
+
   await spectator.goto("/");
   await spectator.locator(".role-player").click();
   await spectator.locator(".name-dialog input").fill("Viewer");
   await spectator.locator(".primary-button").click();
   await expect(spectator.locator(".queue-banner")).toBeVisible();
-  await expectMinimumHeight(spectator, ".score-row", 170);
+  await expectMinimumHeight(spectator, ".score-row", 40);
   await expectNoVerticalScroll(spectator);
 
   await hostContext.close();
   await firstContext.close();
   await secondContext.close();
+  await thirdContext.close();
+  await fourthContext.close();
   await spectatorContext.close();
 });
 
