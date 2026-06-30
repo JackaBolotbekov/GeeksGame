@@ -614,6 +614,7 @@ function HostScreen({
       title={state.winnerUserId ? "Матч завершён" : `Раунд ${state.round}`}
       onRelease={onRelease}
       className={state.answerAttempt ? "has-answer-attempt" : ""}
+      hideHeading
     >
       <div
         className={hostResizing ? "host-stage is-resizing" : "host-stage"}
@@ -673,6 +674,11 @@ function HostScreen({
           onDoubleClick={resetHostSplit}
         />
         <div className="host-stage-game">
+          <ScreenHeading
+            kicker="Панель ведущего"
+            title={state.winnerUserId ? "Матч завершён" : `Раунд ${state.round}`}
+            onRelease={onRelease}
+          />
           <div className="host-status">
             <span className={state.answerAttempt ? "status-live" : ""}>
               {state.answerAttempt ? "Есть ответ!" : "Ждём первый сигнал"}
@@ -1465,6 +1471,7 @@ function ScreenFrame({
   onRelease,
   children,
   className = "",
+  hideHeading = false,
 }: {
   variant: "host" | "player" | "spectator";
   kicker: string;
@@ -1472,6 +1479,7 @@ function ScreenFrame({
   onRelease: () => void;
   children: ReactNode;
   className?: string;
+  hideHeading?: boolean;
 }) {
   return (
     <motion.section
@@ -1480,15 +1488,21 @@ function ScreenFrame({
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.985 }}
     >
-      <div className="screen-heading">
-        <div>
-          <span className="eyebrow">{kicker}</span>
-          <h2>{title}</h2>
-        </div>
-        <button className="exit-button" onClick={onRelease}>Выйти</button>
-      </div>
+      {hideHeading ? null : <ScreenHeading kicker={kicker} title={title} onRelease={onRelease} />}
       {children}
     </motion.section>
+  );
+}
+
+function ScreenHeading({ kicker, title, onRelease }: { kicker: string; title: string; onRelease: () => void }) {
+  return (
+    <div className="screen-heading">
+      <div>
+        <span className="eyebrow">{kicker}</span>
+        <h2>{title}</h2>
+      </div>
+      <button className="exit-button" onClick={onRelease}>Выйти</button>
+    </div>
   );
 }
 

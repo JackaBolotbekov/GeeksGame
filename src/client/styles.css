@@ -385,6 +385,29 @@ button:disabled {
   overflow: hidden;
 }
 
+.host-stage-game > .screen-heading {
+  flex: 0 0 auto;
+  margin: 0 0 clamp(10px, 1.7vh, 16px);
+  align-items: flex-start;
+}
+
+.host-stage-game > .screen-heading > div {
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.host-stage-game > .screen-heading h2 {
+  font-size: clamp(30px, 3.1vw, 54px);
+}
+
+.host-stage-game > .screen-heading .exit-button {
+  flex: 0 0 auto;
+  align-self: center;
+}
+
 .host-stage-resizer {
   position: relative;
   width: 12px;
@@ -1832,36 +1855,12 @@ html.is-host-resizing * {
     padding-top: max(12px, env(safe-area-inset-top));
   }
 
-  .host-screen {
-    position: relative;
-  }
-
-  .host-screen .screen-heading {
-    position: absolute;
-    z-index: 4;
-    top: 0;
-    right: 0;
-    width: min(29vw, 480px);
-    min-width: 340px;
-    margin: 0;
-    align-items: flex-start;
-  }
-
-  .host-screen .screen-heading > div {
-    min-width: 0;
-    flex: 1 1 auto;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
-  }
-
   .host-screen .screen-heading h2 {
     font-size: clamp(30px, 3.2vw, 54px);
   }
 
   .host-screen .exit-button {
     flex: 0 0 auto;
-    margin-top: clamp(44px, 5.5vh, 66px);
   }
 
   .host-stage {
@@ -1869,7 +1868,7 @@ html.is-host-resizing * {
   }
 
   .host-stage-game {
-    padding-top: clamp(94px, 13vh, 126px);
+    padding-top: 0;
   }
 
   .host-stage-music .music-player-shell {

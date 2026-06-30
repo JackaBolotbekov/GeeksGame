@@ -125,6 +125,22 @@ test("host and two players can run a scoring round", async ({ browser }) => {
   await host.mouse.up();
   const splitAfter = await host.locator(".host-stage").evaluate((element) => getComputedStyle(element).gridTemplateColumns);
   expect(splitAfter).not.toBe(splitBefore);
+  const hostLayout = await host.locator(".host-stage").evaluate(() => {
+    const game = document.querySelector(".host-stage-game")?.getBoundingClientRect();
+    const heading = document.querySelector(".host-stage-game > .screen-heading")?.getBoundingClientRect();
+    const music = document.querySelector(".host-stage-music")?.getBoundingClientRect();
+    if (!game || !heading || !music) throw new Error("Host layout is missing required blocks");
+    return {
+      gameLeft: game.left,
+      gameRight: game.right,
+      headingLeft: heading.left,
+      headingRight: heading.right,
+      musicRight: music.right,
+    };
+  });
+  expect(hostLayout.headingLeft).toBeGreaterThanOrEqual(hostLayout.gameLeft - 1);
+  expect(hostLayout.headingRight).toBeLessThanOrEqual(hostLayout.gameRight + 1);
+  expect(hostLayout.headingLeft).toBeGreaterThanOrEqual(hostLayout.musicRight - 1);
   await host.getByLabel("Найти песню в YouTube").fill("чоко");
   await host.getByRole("button", { name: "Найти" }).click();
   await expect(host.locator(".youtube-browser")).toBeVisible();
