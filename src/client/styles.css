@@ -353,8 +353,10 @@ button:disabled {
 }
 
 .host-stage-game {
+  height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .host-stage-game .host-cards {
@@ -379,10 +381,20 @@ button:disabled {
   border-radius: 24px;
   background: #0f0f10;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #5f6068 transparent;
+  scrollbar-width: thin;
 }
 
 .host-stage-music .music-search-panel {
   flex: 0 0 auto;
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  padding-bottom: 2px;
+  background: #0f0f10;
 }
 
 .youtube-browser-top {
@@ -444,8 +456,8 @@ button:disabled {
 }
 
 .youtube-browser-body {
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 0 0 auto;
+  min-height: auto;
   display: grid;
   grid-template-columns: 132px minmax(0, 1fr);
   gap: 14px;
@@ -493,26 +505,27 @@ button:disabled {
 }
 
 .host-stage-music .music-player-shell {
-  flex: 1 1 auto;
-  min-height: 0;
+  flex: 0 0 auto;
+  min-height: auto;
   display: flex;
+  width: 100%;
 }
 
 .host-stage-music .youtube-player-card {
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
+  width: 100%;
   background: rgba(10, 11, 14, 0.86);
 }
 
 .host-stage-music .youtube-frame {
-  flex: 1 1 auto;
+  height: clamp(360px, 42vh, 520px);
   min-height: 360px;
 }
 
 .host-stage-music .music-results {
-  max-height: min(26vh, 280px);
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
@@ -666,16 +679,14 @@ button:disabled {
 
 .host-stage-music .music-results,
 .host-stage-music .music-quick-grid {
-  max-height: min(18vh, 160px);
+  max-height: none;
 }
 
 .music-results button {
   min-width: 0;
   display: grid;
-  grid-template-columns: 54px minmax(0, 1fr);
-  grid-template-rows: auto auto;
-  gap: 2px 10px;
-  align-items: center;
+  grid-template-columns: 1fr;
+  gap: 7px;
   padding: 8px;
   border: 1px solid #555660;
   border-radius: 14px;
@@ -691,30 +702,72 @@ button:disabled {
 
 .music-quick-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+  gap: 10px;
   margin-top: 10px;
-  overflow-y: auto;
-  padding-right: 3px;
 }
 
 .music-quick-grid button {
   min-width: 0;
-  min-height: 88px;
-  display: grid;
-  align-content: end;
-  gap: 2px;
+  min-height: 154px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
   padding: 10px;
   border: 1px solid #555660;
   border-radius: 14px;
   color: #fff;
-  background:
-    linear-gradient(135deg, rgba(255, 0, 51, 0.45), transparent 56%),
-    #22232a;
+  background: #22232a;
   text-align: left;
 }
 
-.music-quick-grid button > span {
+.quick-thumb {
+  position: relative;
+  min-height: 92px;
+  overflow: hidden;
+  border-radius: 11px;
+  background:
+    radial-gradient(circle at 72% 24%, rgba(255, 226, 41, 0.55), transparent 24%),
+    linear-gradient(135deg, rgba(255, 0, 51, 0.72), rgba(55, 58, 75, 0.45)),
+    #15161c;
+}
+
+.quick-thumb::after {
+  content: "";
+  position: absolute;
+  right: 12px;
+  bottom: 14px;
+  width: 62px;
+  height: 28px;
+  border-radius: 999px;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.88) 0 4px,
+      transparent 4px 9px
+    );
+  opacity: 0.8;
+  transform: rotate(-7deg);
+}
+
+.music-quick-grid button:nth-child(2n) .quick-thumb {
+  background:
+    radial-gradient(circle at 22% 28%, rgba(123, 220, 140, 0.55), transparent 24%),
+    linear-gradient(135deg, rgba(255, 226, 41, 0.45), rgba(255, 0, 51, 0.42)),
+    #17181d;
+}
+
+.music-quick-grid button:nth-child(3n) .quick-thumb {
+  background:
+    radial-gradient(circle at 76% 72%, rgba(255, 226, 41, 0.55), transparent 23%),
+    linear-gradient(135deg, rgba(85, 101, 255, 0.55), rgba(255, 0, 51, 0.46)),
+    #17181d;
+}
+
+.quick-thumb > span {
+  position: absolute;
+  left: 12px;
+  top: 12px;
   width: 30px;
   height: 22px;
   display: grid;
@@ -725,26 +778,32 @@ button:disabled {
   font-size: 11px;
 }
 
-.music-quick-grid strong,
-.music-quick-grid small {
+.quick-copy {
+  min-width: 0;
+}
+
+.quick-copy strong,
+.quick-copy small,
+.music-results strong,
+.music-results small {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.music-quick-grid small {
+.quick-copy small {
+  display: block;
   color: var(--muted);
   font-size: 10px;
 }
 
 .music-results img,
 .music-results button > span {
-  grid-row: 1 / 3;
-  width: 54px;
-  height: 40px;
+  width: 100%;
+  height: 118px;
   display: grid;
   place-items: center;
-  border-radius: 10px;
+  border-radius: 12px;
   object-fit: cover;
   background: #111217;
 }

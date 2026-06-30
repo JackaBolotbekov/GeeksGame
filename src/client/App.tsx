@@ -632,9 +632,13 @@ function HostMusicPanel({
                   onClick={() => onQuickSearch(item.query)}
                   disabled={!youtubeConfigured || searching}
                 >
-                  <span>▶</span>
-                  <strong>{item.label}</strong>
-                  <small>{item.query}</small>
+                  <span className="quick-thumb" aria-hidden="true">
+                    <span>▶</span>
+                  </span>
+                  <span className="quick-copy">
+                    <strong>{item.label}</strong>
+                    <small>{item.query}</small>
+                  </span>
                 </button>
               ))}
             </div>
