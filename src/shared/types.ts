@@ -65,6 +65,7 @@ export interface ActionResult {
 
 export interface YouTubeSearchResult extends ActionResult {
   results?: YouTubeTrack[];
+  nextPageToken?: string | null;
 }
 
 export interface ClientToServerEvents {
@@ -75,7 +76,7 @@ export interface ClientToServerEvents {
   "host:next-round": (callback: (result: ActionResult) => void) => void;
   "host:reset-match": (callback: (result: ActionResult) => void) => void;
   "host:remove-player": (userId: string, callback: (result: ActionResult) => void) => void;
-  "host:youtube-search": (payload: { query: string }, callback: (result: YouTubeSearchResult) => void) => void;
+  "host:youtube-search": (payload: { query: string; pageToken?: string | null }, callback: (result: YouTubeSearchResult) => void) => void;
   "host:track-select": (track: YouTubeTrack, callback: (result: ActionResult) => void) => void;
   "host:music-state": (playback: MusicPlayback, callback: (result: ActionResult) => void) => void;
 }

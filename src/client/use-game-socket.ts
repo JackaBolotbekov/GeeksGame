@@ -94,9 +94,9 @@ export function useGameSocket(sessionToken: string | null) {
     [withAck],
   );
   const youtubeSearch = useCallback(
-    (query: string) =>
+    (query: string, pageToken?: string | null) =>
       withAck<YouTubeSearchResult>((socket, callback) =>
-        socket.emit("host:youtube-search", { query }, callback)),
+        socket.emit("host:youtube-search", { query, pageToken }, callback)),
     [withAck],
   );
   const selectTrack = useCallback(

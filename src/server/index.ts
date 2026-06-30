@@ -238,14 +238,17 @@ io.on("connection", (socket) => {
       callback({ ok: false, message: "Только ведущий ищет песни" });
       return;
     }
-    const parsed = z.object({ query: z.string().trim().min(2).max(80) }).safeParse(payload);
+    const parsed = z.object({
+      query: z.string().trim().min(2).max(80),
+      pageToken: z.string().trim().min(1).max(256).nullish(),
+    }).safeParse(payload);
     if (!parsed.success) {
       callback({ ok: false, message: "Введите запрос от 2 до 80 символов" });
       return;
     }
     try {
-      const results = await youtubeSearch.search(parsed.data.query);
-      callback({ ok: true, results });
+      const response = await youtubeSearch.search(parsed.data.query, parsed.data.pageToken ?? null);
+      callback({ ok: true, results: response.results, nextPageToken: response.nextPageToken });
     } catch (error) {
       console.error("YouTube search failed", error);
       callback({

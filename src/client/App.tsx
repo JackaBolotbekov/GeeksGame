@@ -242,7 +242,7 @@ export function App() {
   }, []);
 
   return (
-    <main className="app-shell">
+    <main className={`app-shell viewer-role-${game.state.viewer.role}`}>
       <div className="ambient ambient-one" />
       <div className="ambient ambient-two" />
       <Header
@@ -428,21 +428,38 @@ function HostScreen({
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<YouTubeTrack[]>([]);
   const [searching, setSearching] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchMessage, setSearchMessage] = useState<string | null>(null);
+  const [nextPageToken, setNextPageToken] = useState<string | null>(null);
+  const activeSearchRef = useRef("");
   const setMusicState = game.setMusicState;
   const handleMusicState = useCallback((playback: MusicPlayback) => {
     void setMusicState(playback);
   }, [setMusicState]);
-  const searchTracks = async (searchQuery: string) => {
+  const searchTracks = async (searchQuery: string, pageToken?: string | null) => {
     const trimmedQuery = searchQuery.trim();
     if (trimmedQuery.length < 2) return;
+    const isNextPage = Boolean(pageToken);
     setQuery(trimmedQuery);
-    setSearching(true);
+    activeSearchRef.current = trimmedQuery;
+    if (isNextPage) setLoadingMore(true);
+    else {
+      setSearching(true);
+      setNextPageToken(null);
+    }
     setSearchMessage(null);
-    const response = await game.youtubeSearch(trimmedQuery);
-    setSearching(false);
+    const response = await game.youtubeSearch(trimmedQuery, pageToken);
+    if (activeSearchRef.current !== trimmedQuery) return;
+    if (isNextPage) setLoadingMore(false);
+    else setSearching(false);
     if (response.ok) {
-      setResults(response.results ?? []);
+      const nextResults = response.results ?? [];
+      setResults((currentResults) => {
+        if (!isNextPage) return nextResults;
+        const seen = new Set(currentResults.map((item) => item.videoId));
+        return [...currentResults, ...nextResults.filter((item) => !seen.has(item.videoId))];
+      });
+      setNextPageToken(response.nextPageToken ?? null);
       if (!response.results?.length) setSearchMessage("Ничего не нашли");
     } else {
       setSearchMessage(response.message ?? "Не удалось найти песню");
@@ -459,6 +476,7 @@ function HostScreen({
       kicker="Панель ведущего"
       title={state.winnerUserId ? "Матч завершён" : `Раунд ${state.round}`}
       onRelease={onRelease}
+      className={state.answerAttempt ? "has-answer-attempt" : ""}
     >
       <div className="host-stage">
         <div className="host-stage-music">
@@ -467,11 +485,17 @@ function HostScreen({
             query={query}
             results={results}
             searching={searching}
+            loadingMore={loadingMore}
+            hasMoreResults={Boolean(nextPageToken)}
             searchMessage={searchMessage}
             youtubeConfigured={youtubeConfigured}
             onQueryChange={setQuery}
             onSearch={submitSearch}
             onQuickSearch={(searchQuery) => void searchTracks(searchQuery)}
+            onLoadMore={() => {
+              if (!nextPageToken || searching || loadingMore) return;
+              void searchTracks(query, nextPageToken);
+            }}
             onSelectTrack={(track) => {
               void game.selectTrack(track);
             }}
@@ -535,11 +559,14 @@ function HostMusicPanel({
   query,
   results,
   searching,
+  loadingMore,
+  hasMoreResults,
   searchMessage,
   youtubeConfigured,
   onQueryChange,
   onSearch,
   onQuickSearch,
+  onLoadMore,
   onSelectTrack,
   onMusicState,
 }: {
@@ -547,16 +574,26 @@ function HostMusicPanel({
   query: string;
   results: YouTubeTrack[];
   searching: boolean;
+  loadingMore: boolean;
+  hasMoreResults: boolean;
   searchMessage: string | null;
   youtubeConfigured: boolean;
   onQueryChange: (query: string) => void;
   onSearch: (event: FormEvent) => void;
   onQuickSearch: (query: string) => void;
+  onLoadMore: () => void;
   onSelectTrack: (track: YouTubeTrack) => void;
   onMusicState: (playback: MusicPlayback) => void;
 }) {
   return (
-    <section className="host-music-panel youtube-browser">
+    <section
+      className="host-music-panel youtube-browser"
+      onScroll={(event) => {
+        const target = event.currentTarget;
+        if (!hasMoreResults || loadingMore || searching) return;
+        if (target.scrollTop + target.clientHeight >= target.scrollHeight - 240) onLoadMore();
+      }}
+    >
       <div className="music-search-panel">
         <div className="youtube-browser-top">
           <div className="youtube-wordmark" aria-hidden="true">
@@ -622,6 +659,16 @@ function HostMusicPanel({
                   <small>{track.channelTitle}</small>
                 </button>
               ))}
+              {hasMoreResults || loadingMore ? (
+                <button
+                  className="music-load-more"
+                  type="button"
+                  onClick={onLoadMore}
+                  disabled={loadingMore}
+                >
+                  {loadingMore ? "Подгружаем..." : "Показать ещё"}
+                </button>
+              ) : null}
             </div>
           ) : (
             <div className="music-quick-grid">
@@ -888,6 +935,7 @@ function PlayerScreen({
       kicker={me ? `Играет ${me.displayName}` : "Игровой экран"}
       title={state.winnerUserId ? "Финиш!" : `Раунд ${state.round}`}
       onRelease={onRelease}
+      className={state.answerAttempt ? "has-answer-attempt" : ""}
     >
       <TrackTicker track={state.track} playback={state.musicPlayback} />
       <Scoreboard state={state} />
@@ -936,16 +984,18 @@ function ScreenFrame({
   title,
   onRelease,
   children,
+  className = "",
 }: {
   variant: "host" | "player" | "spectator";
   kicker: string;
   title: string;
   onRelease: () => void;
   children: ReactNode;
+  className?: string;
 }) {
   return (
     <motion.section
-      className={`game-screen ${variant}-screen`}
+      className={["game-screen", `${variant}-screen`, className].filter(Boolean).join(" ")}
       initial={{ opacity: 0, scale: 0.985 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.985 }}

@@ -24,6 +24,21 @@ async function expectMinimumHeight(page: Page, selector: string, minimum: number
   expect(heights.every((height) => height >= minimum)).toBe(true);
 }
 
+async function expectInsideViewport(page: Page, selector: string) {
+  const boxes = await page.locator(selector).evaluateAll((elements) =>
+    elements.map((element) => {
+      const rect = element.getBoundingClientRect();
+      return {
+        top: rect.top,
+        bottom: rect.bottom,
+        viewportHeight: window.innerHeight,
+      };
+    }),
+  );
+  expect(boxes.length).toBeGreaterThan(0);
+  expect(boxes.every((box) => box.top >= -1 && box.bottom <= box.viewportHeight + 1)).toBe(true);
+}
+
 async function routeYouTubeStub(page: Page) {
   await page.route("https://www.youtube.com/iframe_api", (route) =>
     route.fulfill({
@@ -103,9 +118,13 @@ test("host and two players can run a scoring round", async ({ browser }) => {
   await host.getByRole("button", { name: "Найти" }).click();
   await expect(host.locator(".youtube-browser")).toBeVisible();
   await expect(host.locator(".youtube-topic-chips button")).toHaveCount(8);
-  await expect(host.locator(".music-results button")).toHaveCount(2);
-  await host.locator(".music-results button").first().click();
-  await expect(host.locator(".music-results button")).toHaveCount(2);
+  await expect(host.locator(".music-results button:not(.music-load-more)")).toHaveCount(12);
+  await expect(host.locator(".music-load-more")).toBeVisible();
+  await host.locator(".music-load-more").click();
+  await expect(host.locator(".music-results button:not(.music-load-more)")).toHaveCount(24);
+  await expect(host.locator(".music-load-more")).toHaveCount(0);
+  await host.locator(".music-results button:not(.music-load-more)").first().click();
+  await expect(host.locator(".music-results button:not(.music-load-more)")).toHaveCount(24);
   await expect(host.locator(".music-results button.is-selected")).toHaveCount(1);
   await expect(host.locator(".track-ticker").getByText("чоко · тестовый трек")).toBeVisible();
   await host.getByRole("button", { name: "Играть" }).click();
@@ -154,6 +173,7 @@ test("standard mobile screens fit without vertical scrolling", async ({ browser 
   const third = await thirdContext.newPage();
   const fourth = await fourthContext.newPage();
   const spectator = await spectatorContext.newPage();
+  await installFallbackAudioCounter(first);
 
   await host.goto("/");
   await expectNoVerticalScroll(host);
@@ -183,6 +203,19 @@ test("standard mobile screens fit without vertical scrolling", async ({ browser 
   await expect(host.locator(".host-player-card")).toHaveCount(2);
   await expectMinimumHeight(host, ".host-player-card", 220);
   await expectNoVerticalScroll(host);
+
+  await first.locator(".buzzer").click();
+  await expect(first.locator(".player-screen.has-answer-attempt")).toBeVisible();
+  await expect(host.locator(".host-screen.has-answer-attempt")).toBeVisible();
+  await expect(first.locator(".answer-banner")).toBeVisible();
+  await expectMinimumHeight(first, ".buzzer", 150);
+  await expectInsideViewport(first, ".buzzer");
+  await expectInsideViewport(first, ".answer-banner");
+  await expectInsideViewport(host, ".host-player-card");
+  await expectNoVerticalScroll(first);
+  await expectNoVerticalScroll(host);
+  await host.locator(".plus-zone").first().click();
+  await expect(first.locator(".player-screen.has-answer-attempt")).toHaveCount(0);
 
   await third.goto("/");
   await third.locator(".role-player").click();
@@ -214,6 +247,42 @@ test("standard mobile screens fit without vertical scrolling", async ({ browser 
   await thirdContext.close();
   await fourthContext.close();
   await spectatorContext.close();
+});
+
+test("android player buzzer stays a large bottom tap target", async ({ browser }) => {
+  const contextOptions = {
+    viewport: { width: 360, height: 740 },
+    userAgent: "Mozilla/5.0 (Linux; Android 13; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Mobile Safari/537.36",
+  };
+  const hostContext = await browser.newContext(contextOptions);
+  const playerContext = await browser.newContext(contextOptions);
+  const host = await hostContext.newPage();
+  const player = await playerContext.newPage();
+  await installFallbackAudioCounter(player);
+
+  await host.goto("/");
+  await host.locator(".role-host").click();
+  await expect(host.locator(".host-screen")).toBeVisible();
+
+  await player.goto("/");
+  await player.locator(".role-player").click();
+  await player.locator(".name-dialog input").fill("Android");
+  await player.locator(".primary-button").click();
+  await expect(player.locator(".buzzer")).toBeVisible();
+  await expectMinimumHeight(player, ".buzzer", 220);
+  await expectInsideViewport(player, ".buzzer");
+  await expectNoVerticalScroll(player);
+
+  await player.locator(".buzzer").click();
+  await expect(player.locator(".player-screen.has-answer-attempt")).toBeVisible();
+  await expect(player.locator(".answer-banner")).toBeVisible();
+  await expectMinimumHeight(player, ".buzzer", 150);
+  await expectInsideViewport(player, ".buzzer");
+  await expectInsideViewport(player, ".answer-banner");
+  await expectNoVerticalScroll(player);
+
+  await hostContext.close();
+  await playerContext.close();
 });
 
 test("first-time Telegram player can open name onboarding", async ({ browser }) => {
