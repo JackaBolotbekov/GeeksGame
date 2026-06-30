@@ -403,6 +403,17 @@ function RoleScreen({
 
 type GameActions = ReturnType<typeof useGameSocket>;
 
+const YOUTUBE_QUICK_SEARCHES = [
+  { label: "Все", query: "популярные песни" },
+  { label: "Музыка", query: "музыка хиты" },
+  { label: "Джемы", query: "live jam session music" },
+  { label: "Топ-чарты", query: "топ чарты музыка" },
+  { label: "2000-е", query: "хиты 2000 русские" },
+  { label: "2010-е", query: "хиты 2010 русские" },
+  { label: "Black Star", query: "Black Star хиты" },
+  { label: "Gazgolder", query: "Gazgolder хиты" },
+];
+
 function HostScreen({
   state,
   game,
@@ -422,11 +433,13 @@ function HostScreen({
   const handleMusicState = useCallback((playback: MusicPlayback) => {
     void setMusicState(playback);
   }, [setMusicState]);
-  const searchTracks = async (event: FormEvent) => {
-    event.preventDefault();
+  const searchTracks = async (searchQuery: string) => {
+    const trimmedQuery = searchQuery.trim();
+    if (trimmedQuery.length < 2) return;
+    setQuery(trimmedQuery);
     setSearching(true);
     setSearchMessage(null);
-    const response = await game.youtubeSearch(query);
+    const response = await game.youtubeSearch(trimmedQuery);
     setSearching(false);
     if (response.ok) {
       setResults(response.results ?? []);
@@ -434,6 +447,10 @@ function HostScreen({
     } else {
       setSearchMessage(response.message ?? "Не удалось найти песню");
     }
+  };
+  const submitSearch = (event: FormEvent) => {
+    event.preventDefault();
+    void searchTracks(query);
   };
 
   return (
@@ -453,9 +470,9 @@ function HostScreen({
             searchMessage={searchMessage}
             youtubeConfigured={youtubeConfigured}
             onQueryChange={setQuery}
-            onSearch={searchTracks}
+            onSearch={submitSearch}
+            onQuickSearch={(searchQuery) => void searchTracks(searchQuery)}
             onSelectTrack={(track) => {
-              setResults([]);
               void game.selectTrack(track);
             }}
             onMusicState={handleMusicState}
@@ -522,6 +539,7 @@ function HostMusicPanel({
   youtubeConfigured,
   onQueryChange,
   onSearch,
+  onQuickSearch,
   onSelectTrack,
   onMusicState,
 }: {
@@ -533,44 +551,95 @@ function HostMusicPanel({
   youtubeConfigured: boolean;
   onQueryChange: (query: string) => void;
   onSearch: (event: FormEvent) => void;
+  onQuickSearch: (query: string) => void;
   onSelectTrack: (track: YouTubeTrack) => void;
   onMusicState: (playback: MusicPlayback) => void;
 }) {
   return (
-    <section className="host-music-panel">
-      <div className="music-player-shell">
-        <YouTubePlayer
-          track={state.track}
-          playback={state.musicPlayback}
-          shouldPause={Boolean(state.answerAttempt)}
-          onPlaybackChange={onMusicState}
-        />
-      </div>
+    <section className="host-music-panel youtube-browser">
       <div className="music-search-panel">
-        <form className="music-search" onSubmit={onSearch}>
-          <input
-            value={query}
-            onChange={(event) => onQueryChange(event.target.value)}
-            placeholder={youtubeConfigured ? "Найти песню в YouTube" : "Нужен YOUTUBE_API_KEY"}
-            aria-label="Найти песню в YouTube"
-            disabled={!youtubeConfigured}
-          />
-          <button disabled={!youtubeConfigured || searching || query.trim().length < 2}>
-            {searching ? "Ищем..." : "Найти"}
-          </button>
-        </form>
-        {searchMessage ? <p className="music-search-message">{searchMessage}</p> : null}
-        {results.length ? (
-          <div className="music-results">
-            {results.map((track) => (
-              <button key={track.videoId} onClick={() => onSelectTrack(track)}>
-                {track.thumbnailUrl ? <img src={track.thumbnailUrl} alt="" /> : <span>♪</span>}
-                <strong>{track.title}</strong>
-                <small>{track.channelTitle}</small>
-              </button>
-            ))}
+        <div className="youtube-browser-top">
+          <div className="youtube-wordmark" aria-hidden="true">
+            <span>▶</span>
+            <strong>YouTube</strong>
           </div>
-        ) : null}
+          <form className="music-search" onSubmit={onSearch}>
+            <input
+              value={query}
+              onChange={(event) => onQueryChange(event.target.value)}
+              placeholder={youtubeConfigured ? "Найти песню в YouTube" : "Нужен YOUTUBE_API_KEY"}
+              aria-label="Найти песню в YouTube"
+              disabled={!youtubeConfigured}
+            />
+            <button disabled={!youtubeConfigured || searching || query.trim().length < 2}>
+              {searching ? "Ищем..." : "Найти"}
+            </button>
+          </form>
+          <span className="youtube-browser-caption">поиск · джемы · рекомендации</span>
+        </div>
+        <div className="youtube-topic-chips" aria-label="Быстрые подборки YouTube">
+          {YOUTUBE_QUICK_SEARCHES.map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              onClick={() => onQuickSearch(item.query)}
+              disabled={!youtubeConfigured || searching}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="youtube-browser-body">
+        <aside className="youtube-side-nav" aria-label="Разделы YouTube">
+          <span className="is-active">Главная</span>
+          <span>Shorts</span>
+          <span>Музыка</span>
+          <span>Джемы</span>
+          <span>Топ-чарты</span>
+          <span>Плейлисты</span>
+        </aside>
+        <div className="youtube-main-feed">
+          <div className="music-player-shell">
+            <YouTubePlayer
+              track={state.track}
+              playback={state.musicPlayback}
+              shouldPause={Boolean(state.answerAttempt)}
+              onPlaybackChange={onMusicState}
+            />
+          </div>
+          {searchMessage ? <p className="music-search-message">{searchMessage}</p> : null}
+          {results.length ? (
+            <div className="music-results">
+              {results.map((track) => (
+                <button
+                  key={track.videoId}
+                  className={state.track?.videoId === track.videoId ? "is-selected" : ""}
+                  onClick={() => onSelectTrack(track)}
+                >
+                  {track.thumbnailUrl ? <img src={track.thumbnailUrl} alt="" /> : <span>♪</span>}
+                  <strong>{track.title}</strong>
+                  <small>{track.channelTitle}</small>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="music-quick-grid">
+              {YOUTUBE_QUICK_SEARCHES.slice(1).map((item) => (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={() => onQuickSearch(item.query)}
+                  disabled={!youtubeConfigured || searching}
+                >
+                  <span>▶</span>
+                  <strong>{item.label}</strong>
+                  <small>{item.query}</small>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </section>
   );

@@ -101,9 +101,13 @@ test("host and two players can run a scoring round", async ({ browser }) => {
   await expect(host.getByText("Панель ведущего")).toBeVisible();
   await host.getByLabel("Найти песню в YouTube").fill("чоко");
   await host.getByRole("button", { name: "Найти" }).click();
+  await expect(host.locator(".youtube-browser")).toBeVisible();
+  await expect(host.locator(".youtube-topic-chips button")).toHaveCount(8);
   await expect(host.locator(".music-results button")).toHaveCount(2);
   await host.locator(".music-results button").first().click();
-  await expect(host.getByText("чоко · тестовый трек")).toBeVisible();
+  await expect(host.locator(".music-results button")).toHaveCount(2);
+  await expect(host.locator(".music-results button.is-selected")).toHaveCount(1);
+  await expect(host.locator(".track-ticker").getByText("чоко · тестовый трек")).toBeVisible();
   await host.getByRole("button", { name: "Играть" }).click();
   await expect.poll(() => host.evaluate(() => window.__ytLastAction)).toBe("play");
 
@@ -123,6 +127,11 @@ test("host and two players can run a scoring round", async ({ browser }) => {
   await expect.poll(() => first.evaluate(() => window.__shoutPlayed)).toBe(1);
   await expect(host.getByText("Есть ответ!")).toBeVisible();
   await expect.poll(() => host.evaluate(() => window.__ytLastAction)).toBe("pause");
+  await expect(host.locator(".answer-timer strong")).toBeVisible();
+  const timerValue = Number(await host.locator(".answer-timer strong").innerText());
+  expect(timerValue).toBeGreaterThan(0);
+  expect(timerValue).toBeLessThanOrEqual(10);
+  await expect(first.locator(".answer-banner")).toBeVisible();
   await host.locator(".plus-zone").first().click();
   await expect(first.locator(".score-row").first().locator(".score-value strong")).toHaveText("1");
 
