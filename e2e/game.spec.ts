@@ -62,9 +62,17 @@ async function routeYouTubeStub(page: Page) {
             this.cueVideoById = function(videoId) {
               window.__ytLastVideoId = videoId;
             };
+            this.loadVideoById = function(videoId) {
+              window.__ytLastVideoId = videoId;
+              this.playVideo();
+            };
             this.destroy = function() {};
             setTimeout(function() {
               options.events && options.events.onReady && options.events.onReady();
+              if (options.playerVars && options.playerVars.autoplay) {
+                window.__ytLastAction = 'play';
+                options.events && options.events.onStateChange && options.events.onStateChange({ data: 1 });
+              }
             }, 0);
           }
         };
@@ -154,6 +162,8 @@ test("host and two players can run a scoring round", async ({ browser }) => {
   await expect(host.locator(".music-results button:not(.music-load-more)")).toHaveCount(24);
   await expect(host.locator(".music-results button.is-selected")).toHaveCount(1);
   await expect(host.locator(".track-ticker").getByText("чоко · тестовый трек")).toBeVisible();
+  await expect.poll(() => host.evaluate(() => window.__ytLastVideoId)).toBe("dQw4w9WgXcQ");
+  await expect.poll(() => host.evaluate(() => window.__ytLastAction)).toBe("play");
 
   await host.getByRole("button", { name: "+ плейлист" }).click();
   await expect(host.locator(".playlist-sidebar .playlist-composer")).toBeVisible();
@@ -170,13 +180,13 @@ test("host and two players can run a scoring round", async ({ browser }) => {
   await expect(host.locator(".playlist-composer")).toHaveCount(0);
   await host.locator(".playlist-card").filter({ hasText: "Старые хиты" }).click();
   await expect(host.locator(".music-results button:not(.music-load-more)")).toHaveCount(24);
+  await expect(host.locator(".music-results button:not(.music-load-more)").first().locator("small")).toHaveCount(0);
   await expect(host.locator(".music-load-more")).toBeVisible();
   await host.locator(".music-load-more").dispatchEvent("click");
   await expect(host.locator(".music-results button:not(.music-load-more)")).toHaveCount(48);
   await host.locator(".music-results button:not(.music-load-more)").first().click();
   await expect(host.locator(".track-ticker").getByText("PLgeeksgame12345 · плейлист трек 1")).toBeVisible();
-
-  await host.getByRole("button", { name: "Играть" }).click();
+  await expect.poll(() => host.evaluate(() => window.__ytLastVideoId)).toBe("M7lc1UVf-VE");
   await expect.poll(() => host.evaluate(() => window.__ytLastAction)).toBe("play");
 
   await first.goto("/");

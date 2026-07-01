@@ -31,6 +31,7 @@ interface Window {
       playVideo(): void;
       pauseVideo(): void;
       cueVideoById(videoId: string): void;
+      loadVideoById(videoId: string): void;
       destroy(): void;
     };
     PlayerState: {

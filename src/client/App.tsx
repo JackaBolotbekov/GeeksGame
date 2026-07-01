@@ -640,6 +640,7 @@ function HostScreen({
             playlistMessage={playlistMessage}
             playlistComposerOpen={playlistComposerOpen}
             selectedPlaylistId={selectedPlaylist?.id ?? null}
+            resultMode={resultMode}
             onQueryChange={setQuery}
             onSearch={submitSearch}
             onQuickSearch={(searchQuery) => void searchTracks(searchQuery)}
@@ -660,7 +661,9 @@ function HostScreen({
               else void searchTracks(query, nextPageToken);
             }}
             onSelectTrack={(track) => {
-              void game.selectTrack(track);
+              void game.selectTrack(track).then((result) => {
+                if (result.ok) void game.setMusicState("playing");
+              });
             }}
             onMusicState={handleMusicState}
           />
@@ -748,6 +751,7 @@ function HostMusicPanel({
   playlistMessage,
   playlistComposerOpen,
   selectedPlaylistId,
+  resultMode,
   onQueryChange,
   onSearch,
   onQuickSearch,
@@ -780,6 +784,7 @@ function HostMusicPanel({
   playlistMessage: string | null;
   playlistComposerOpen: boolean;
   selectedPlaylistId: string | null;
+  resultMode: "search" | "playlist" | null;
   onQueryChange: (query: string) => void;
   onSearch: (event: FormEvent) => void;
   onQuickSearch: (query: string) => void;
@@ -795,6 +800,7 @@ function HostMusicPanel({
   onSelectTrack: (track: YouTubeTrack) => void;
   onMusicState: (playback: MusicPlayback) => void;
 }) {
+  const showResultChannel = resultMode !== "playlist";
   return (
     <section
       className="host-music-panel youtube-browser"
@@ -878,7 +884,7 @@ function HostMusicPanel({
                 >
                   {track.thumbnailUrl ? <img src={track.thumbnailUrl} alt="" /> : <span>♪</span>}
                   <strong>{track.title}</strong>
-                  <small>{track.channelTitle}</small>
+                  {showResultChannel ? <small>{track.channelTitle}</small> : null}
                 </button>
               ))}
               {hasMoreResults || loadingMore ? (
@@ -1186,6 +1192,7 @@ type YouTubePlayerInstance = {
   playVideo(): void;
   pauseVideo(): void;
   cueVideoById(videoId: string): void;
+  loadVideoById(videoId: string): void;
   destroy(): void;
 };
 
@@ -1211,7 +1218,8 @@ function YouTubePlayer({
     void loadYouTubeIframeApi().then(() => {
       if (cancelled || !window.YT?.Player || !containerRef.current) return;
       if (playerRef.current) {
-        playerRef.current.cueVideoById(videoId);
+        if (playback === "playing" && !shouldPause) playerRef.current.loadVideoById(videoId);
+        else playerRef.current.cueVideoById(videoId);
         setReady(true);
         return;
       }
@@ -1223,6 +1231,7 @@ function YouTubePlayer({
           controls: 1,
           playsinline: 1,
           rel: 0,
+          autoplay: playback === "playing" && !shouldPause ? 1 : 0,
           origin: window.location.origin,
         },
         events: {
@@ -1240,7 +1249,7 @@ function YouTubePlayer({
     return () => {
       cancelled = true;
     };
-  }, [onPlaybackChange, videoId]);
+  }, [onPlaybackChange, playback, shouldPause, videoId]);
 
   useEffect(() => {
     if (videoId) return;
@@ -1261,6 +1270,12 @@ function YouTubePlayer({
       onPlaybackChange("paused");
     }
   }, [onPlaybackChange, shouldPause]);
+
+  useEffect(() => {
+    if (!ready || !playerRef.current || !videoId || shouldPause) return;
+    if (playback === "playing") playerRef.current.playVideo();
+    if (playback === "paused") playerRef.current.pauseVideo();
+  }, [playback, ready, shouldPause, videoId]);
 
   return (
     <div className={`youtube-player-card ${track ? "has-track" : ""}`}>
