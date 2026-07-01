@@ -898,26 +898,7 @@ function HostMusicPanel({
                 </button>
               ) : null}
             </div>
-          ) : (
-            <div className="music-quick-grid">
-              {YOUTUBE_QUICK_SEARCHES.slice(1).map((item) => (
-                <button
-                  key={item.label}
-                  type="button"
-                  onClick={() => onQuickSearch(item.query)}
-                  disabled={!youtubeConfigured || searching}
-                >
-                  <span className="quick-thumb" aria-hidden="true">
-                    <span>▶</span>
-                  </span>
-                  <span className="quick-copy">
-                    <strong>{item.label}</strong>
-                    <small>{item.query}</small>
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
+          ) : null}
         </div>
       </div>
     </section>

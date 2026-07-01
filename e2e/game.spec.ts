@@ -152,6 +152,7 @@ test("host and two players can run a scoring round", async ({ browser }) => {
   await host.getByLabel("Найти песню в YouTube").fill("чоко");
   await host.getByRole("button", { name: "Найти" }).click();
   await expect(host.locator(".youtube-browser")).toBeVisible();
+  await expect(host.locator(".music-quick-grid")).toHaveCount(0);
   await expect(host.locator(".youtube-topic-chips button")).toHaveCount(8);
   await expect(host.locator(".music-results button:not(.music-load-more)")).toHaveCount(12);
   await expect(host.locator(".music-load-more")).toBeVisible();
