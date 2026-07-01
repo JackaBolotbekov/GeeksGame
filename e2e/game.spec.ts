@@ -194,6 +194,8 @@ test("host and two players can run a scoring round", async ({ browser }) => {
   await first.getByLabel("Имя или ник").fill("Чоко");
   await first.getByRole("button", { name: "В игру" }).click();
   await expect(first.getByText("Играет Чоко")).toBeVisible();
+  await expect(first.locator(".player-screen .track-ticker strong")).toHaveText("Песня играет");
+  await expect(first.getByText("PLgeeksgame12345 · плейлист трек 1")).toHaveCount(0);
 
   await second.goto("/");
   await second.getByRole("button", { name: "Я игрок" }).click();

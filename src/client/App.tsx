@@ -1309,13 +1309,28 @@ function YouTubePlayer({
   );
 }
 
-function TrackTicker({ track, playback }: { track: YouTubeTrack | null; playback: MusicPlayback }) {
+function TrackTicker({
+  track,
+  playback,
+  hideTitle = false,
+}: {
+  track: YouTubeTrack | null;
+  playback: MusicPlayback;
+  hideTitle?: boolean;
+}) {
+  const safeTitle = track
+    ? playback === "playing"
+      ? "Песня играет"
+      : playback === "paused"
+        ? "Песня на паузе"
+        : "Песня выбрана"
+    : "Песня не выбрана";
   return (
-    <div className="track-ticker">
+    <div className={`track-ticker ${hideTitle ? "is-private" : ""}`}>
       <span className={`music-dot is-${playback}`} />
       <div>
         <small>{playback === "playing" ? "играет" : playback === "paused" ? "пауза" : "трек"}</small>
-        <strong>{track ? track.title : "Песня не выбрана"}</strong>
+        <strong>{hideTitle ? safeTitle : track ? track.title : "Песня не выбрана"}</strong>
       </div>
     </div>
   );
@@ -1438,7 +1453,7 @@ function PlayerScreen({
       onRelease={onRelease}
       className={state.answerAttempt ? "has-answer-attempt" : ""}
     >
-      <TrackTicker track={state.track} playback={state.musicPlayback} />
+      <TrackTicker track={state.track} playback={state.musicPlayback} hideTitle />
       <Scoreboard state={state} />
       <AnswerBanner attempt={state.answerAttempt} players={state.players} viewerUserId={state.viewer.userId} />
       <Waveform active={state.musicPlayback === "playing" && !isLocked} />
@@ -1465,7 +1480,7 @@ function PlayerScreen({
 function SpectatorScreen({ state, onRelease }: { state: GameState; onRelease: () => void }) {
   return (
     <ScreenFrame variant="spectator" kicker="Режим зрителя" title={`Раунд ${state.round}`} onRelease={onRelease}>
-      <TrackTicker track={state.track} playback={state.musicPlayback} />
+      <TrackTicker track={state.track} playback={state.musicPlayback} hideTitle />
       <div className="queue-banner">
         <span>Вы в очереди</span>
         <strong>#{state.viewer.queuePosition}</strong>

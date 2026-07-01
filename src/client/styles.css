@@ -24,6 +24,8 @@ body {
   min-width: 320px;
   min-height: 100vh;
   min-height: 100dvh;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
   background:
     radial-gradient(circle at 10% 20%, rgba(255, 226, 41, 0.08), transparent 28rem),
     #1c1d22;
@@ -1266,8 +1268,10 @@ html.is-host-resizing * {
 }
 
 .score-name span {
-  color: #77787c;
+  color: #3d3e44;
   font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 1.1px;
   text-transform: uppercase;
 }
 
