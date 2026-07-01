@@ -167,7 +167,7 @@ export class GameRoom {
   selectTrack(socketId: string, track: YouTubeTrack): ActionResult {
     if (!this.isHost(socketId)) return fail("Только ведущий выбирает песню");
     this.track = track;
-    this.musicPlayback = "idle";
+    this.musicPlayback = "playing";
     this.clearAnswerAttempt();
     return ok();
   }

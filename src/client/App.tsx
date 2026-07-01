@@ -661,9 +661,7 @@ function HostScreen({
               else void searchTracks(query, nextPageToken);
             }}
             onSelectTrack={(track) => {
-              void game.selectTrack(track).then((result) => {
-                if (result.ok) void game.setMusicState("playing");
-              });
+              void game.selectTrack(track);
             }}
             onMusicState={handleMusicState}
           />
@@ -1190,6 +1188,7 @@ function YouTubePlayer({
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<YouTubePlayerInstance | null>(null);
+  const autoplayingVideoRef = useRef<string | null>(null);
   const [ready, setReady] = useState(false);
   const videoId = track?.videoId;
 
@@ -1199,11 +1198,12 @@ function YouTubePlayer({
     void loadYouTubeIframeApi().then(() => {
       if (cancelled || !window.YT?.Player || !containerRef.current) return;
       if (playerRef.current) {
-        if (playback === "playing" && !shouldPause) playerRef.current.loadVideoById(videoId);
-        else playerRef.current.cueVideoById(videoId);
+        autoplayingVideoRef.current = videoId;
+        playerRef.current.loadVideoById(videoId);
         setReady(true);
         return;
       }
+      autoplayingVideoRef.current = videoId;
       playerRef.current = new window.YT.Player(containerRef.current, {
         videoId,
         width: "100%",
@@ -1212,7 +1212,7 @@ function YouTubePlayer({
           controls: 1,
           playsinline: 1,
           rel: 0,
-          autoplay: playback === "playing" && !shouldPause ? 1 : 0,
+          autoplay: 1,
           origin: window.location.origin,
         },
         events: {
@@ -1220,8 +1220,14 @@ function YouTubePlayer({
           onStateChange: (event) => {
             const playerState = window.YT?.PlayerState;
             if (!playerState) return;
-            if (event.data === playerState.PLAYING) onPlaybackChange("playing");
-            if (event.data === playerState.PAUSED) onPlaybackChange("paused");
+            if (event.data === playerState.PLAYING) {
+              autoplayingVideoRef.current = null;
+              onPlaybackChange("playing");
+            }
+            if (event.data === playerState.PAUSED) {
+              if (autoplayingVideoRef.current) return;
+              onPlaybackChange("paused");
+            }
             if (event.data === playerState.ENDED) onPlaybackChange("idle");
           },
         },
@@ -1230,12 +1236,13 @@ function YouTubePlayer({
     return () => {
       cancelled = true;
     };
-  }, [onPlaybackChange, playback, shouldPause, videoId]);
+  }, [onPlaybackChange, videoId]);
 
   useEffect(() => {
     if (videoId) return;
     playerRef.current?.destroy();
     playerRef.current = null;
+    autoplayingVideoRef.current = null;
   }, [videoId]);
 
   useEffect(() => {
@@ -1290,28 +1297,13 @@ function YouTubePlayer({
   );
 }
 
-function TrackTicker({
-  track,
-  playback,
-  hideTitle = false,
-}: {
-  track: YouTubeTrack | null;
-  playback: MusicPlayback;
-  hideTitle?: boolean;
-}) {
-  const safeTitle = track
-    ? playback === "playing"
-      ? "Песня играет"
-      : playback === "paused"
-        ? "Песня на паузе"
-        : "Песня выбрана"
-    : "Песня не выбрана";
+function TrackTicker({ track, playback }: { track: YouTubeTrack | null; playback: MusicPlayback }) {
   return (
-    <div className={`track-ticker ${hideTitle ? "is-private" : ""}`}>
+    <div className="track-ticker">
       <span className={`music-dot is-${playback}`} />
       <div>
         <small>{playback === "playing" ? "играет" : playback === "paused" ? "пауза" : "трек"}</small>
-        <strong>{hideTitle ? safeTitle : track ? track.title : "Песня не выбрана"}</strong>
+        <strong>{track ? track.title : "Песня не выбрана"}</strong>
       </div>
     </div>
   );
@@ -1434,10 +1426,8 @@ function PlayerScreen({
       onRelease={onRelease}
       className={state.answerAttempt ? "has-answer-attempt" : ""}
     >
-      <TrackTicker track={state.track} playback={state.musicPlayback} hideTitle />
       <Scoreboard state={state} />
       <AnswerBanner attempt={state.answerAttempt} players={state.players} viewerUserId={state.viewer.userId} />
-      <Waveform active={state.musicPlayback === "playing" && !isLocked} />
       <div className="buzzer-wrap">
         <motion.button
           className={`buzzer ${pressedMe ? "is-pressed" : ""}`}
@@ -1461,7 +1451,6 @@ function PlayerScreen({
 function SpectatorScreen({ state, onRelease }: { state: GameState; onRelease: () => void }) {
   return (
     <ScreenFrame variant="spectator" kicker="Режим зрителя" title={`Раунд ${state.round}`} onRelease={onRelease}>
-      <TrackTicker track={state.track} playback={state.musicPlayback} hideTitle />
       <div className="queue-banner">
         <span>Вы в очереди</span>
         <strong>#{state.viewer.queuePosition}</strong>
@@ -1469,7 +1458,6 @@ function SpectatorScreen({ state, onRelease }: { state: GameState; onRelease: ()
       </div>
       <Scoreboard state={state} />
       <AnswerBanner attempt={state.answerAttempt} players={state.players} viewerUserId={state.viewer.userId} />
-      <Waveform active={state.musicPlayback === "playing" && !state.answerAttempt && !state.winnerUserId} />
       <WinnerOverlay state={state} />
     </ScreenFrame>
   );
@@ -1578,15 +1566,6 @@ function Score({ value, event }: { value: number; event: GameState["scoreEvent"]
           </motion.span>
         ) : null}
       </AnimatePresence>
-    </div>
-  );
-}
-
-function Waveform({ active }: { active: boolean }) {
-  const bars = [18, 36, 26, 54, 30, 42, 72, 34, 56, 25, 64, 40, 76, 30, 48, 22, 58, 38, 68, 28, 44];
-  return (
-    <div className={`waveform ${active ? "is-active" : ""}`} aria-hidden="true">
-      {bars.map((height, index) => <i key={index} style={{ height, animationDelay: `${index * -70}ms` }} />)}
     </div>
   );
 }

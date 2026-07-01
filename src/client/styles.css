@@ -1212,29 +1212,6 @@ html.is-host-resizing * {
   color: var(--red);
 }
 
-.waveform {
-  height: 104px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  margin: 20px 0;
-}
-
-.waveform i {
-  width: clamp(3px, 1vw, 7px);
-  max-height: 76px;
-  border-radius: 99px;
-  background: #777881;
-  transform: scaleY(0.55);
-  transition: background 180ms ease;
-}
-
-.waveform.is-active i {
-  background: var(--yellow);
-  animation: waveform 900ms ease-in-out infinite alternate;
-}
-
 .answer-banner {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -1702,10 +1679,6 @@ html.is-host-resizing * {
   background: #292a31;
   box-shadow: 0 14px 45px rgba(0, 0, 0, 0.3);
   text-align: left;
-}
-
-@keyframes waveform {
-  to { transform: scaleY(1); }
 }
 
 @keyframes buzz-pulse {
@@ -2346,17 +2319,6 @@ html.is-host-resizing * {
     font-size: clamp(7px, 2.1vw, 9px);
   }
 
-  .waveform {
-    flex: 0 0 clamp(76px, 11vh, 104px);
-    height: auto;
-    gap: clamp(3px, 1.2vw, 5px);
-    margin: clamp(8px, 1.5vh, 14px) 0;
-  }
-
-  .waveform i {
-    max-height: clamp(58px, 9vh, 82px);
-  }
-
   .buzzer-wrap {
     flex: 1 1 auto;
     min-height: clamp(240px, 36vh, 430px);
@@ -2385,10 +2347,6 @@ html.is-host-resizing * {
 
   .player-screen.has-answer-attempt .screen-heading {
     margin-bottom: clamp(8px, 1.2vh, 12px);
-  }
-
-  .player-screen.has-answer-attempt .track-ticker {
-    padding: 7px 10px;
   }
 
   .player-screen.has-answer-attempt .scoreboard {
@@ -2431,15 +2389,6 @@ html.is-host-resizing * {
 
   .player-screen.has-answer-attempt .answer-timer strong {
     font-size: clamp(28px, 8vw, 38px);
-  }
-
-  .player-screen.has-answer-attempt .waveform {
-    flex: 0 0 clamp(44px, 7vh, 62px);
-    margin: clamp(5px, 1vh, 8px) 0;
-  }
-
-  .player-screen.has-answer-attempt .waveform i {
-    max-height: clamp(36px, 6vh, 52px);
   }
 
   .player-screen.has-answer-attempt .buzzer-wrap {
@@ -2610,12 +2559,6 @@ html.is-host-resizing * {
 
   .score-row {
     min-height: 68px;
-  }
-
-  .waveform {
-    flex: none;
-    height: 44px;
-    margin: 6px 0;
   }
 
   .buzzer-wrap {

@@ -155,6 +155,17 @@ describe("GameRoom", () => {
     expect(state.musicPlayback).toBe("idle");
   });
 
+  it("starts playback when the host selects a track", () => {
+    const room = setup();
+    expect(room.selectTrack("host", {
+      videoId: "video",
+      title: "Song",
+      channelTitle: "Channel",
+      thumbnailUrl: null,
+    }).ok).toBe(true);
+    expect(room.getState("host").musicPlayback).toBe("playing");
+  });
+
   it("does not let one identity occupy multiple player slots", () => {
     const room = new GameRoom();
     expect(room.claim("one-socket", player("one", "Choko"), "player").ok).toBe(true);

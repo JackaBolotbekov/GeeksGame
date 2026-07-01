@@ -4,6 +4,7 @@ declare global {
   interface Window {
     __ytLastAction: string | null;
     __ytLastVideoId: string | null;
+    __ytLoadCount: number;
     __shoutPlayed: number;
   }
 }
@@ -46,6 +47,7 @@ async function routeYouTubeStub(page: Page) {
       body: `
         window.__ytLastAction = null;
         window.__ytLastVideoId = null;
+        window.__ytLoadCount = 0;
         window.YT = {
           PlayerState: { ENDED: 0, PLAYING: 1, PAUSED: 2 },
           Player: function(element, options) {
@@ -64,6 +66,7 @@ async function routeYouTubeStub(page: Page) {
             };
             this.loadVideoById = function(videoId) {
               window.__ytLastVideoId = videoId;
+              window.__ytLoadCount += 1;
               this.playVideo();
             };
             this.destroy = function() {};
@@ -189,14 +192,21 @@ test("host and two players can run a scoring round", async ({ browser }) => {
   await expect(host.locator(".track-ticker").getByText("PLgeeksgame12345 · плейлист трек 1")).toBeVisible();
   await expect.poll(() => host.evaluate(() => window.__ytLastVideoId)).toBe("M7lc1UVf-VE");
   await expect.poll(() => host.evaluate(() => window.__ytLastAction)).toBe("play");
+  await expect.poll(() => host.evaluate(() => window.__ytLoadCount)).toBe(1);
+  await host.locator(".music-results button:not(.music-load-more)").nth(1).click();
+  await expect(host.locator(".track-ticker").getByText("PLgeeksgame12345 · плейлист трек 2")).toBeVisible();
+  await expect.poll(() => host.evaluate(() => window.__ytLastVideoId)).toBe("mock-playlist-video-2");
+  await expect.poll(() => host.evaluate(() => window.__ytLastAction)).toBe("play");
+  await expect.poll(() => host.evaluate(() => window.__ytLoadCount)).toBe(2);
 
   await first.goto("/");
   await first.getByRole("button", { name: "Я игрок" }).click();
   await first.getByLabel("Имя или ник").fill("Чоко");
   await first.getByRole("button", { name: "В игру" }).click();
   await expect(first.getByText("Играет Чоко")).toBeVisible();
-  await expect(first.locator(".player-screen .track-ticker strong")).toHaveText("Песня играет");
-  await expect(first.getByText("PLgeeksgame12345 · плейлист трек 1")).toHaveCount(0);
+  await expect(first.locator(".player-screen .track-ticker")).toHaveCount(0);
+  await expect(first.locator(".player-screen .waveform")).toHaveCount(0);
+  await expect(first.getByText("PLgeeksgame12345 · плейлист трек 2")).toHaveCount(0);
 
   await second.goto("/");
   await second.getByRole("button", { name: "Я игрок" }).click();
