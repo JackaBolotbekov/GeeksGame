@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Geeks Game",
-  description: "Geeks Game: игровая платформа сообщества Geeks.",
+  description: "Geeks Game: игровая мини-платформа сообщества Geeks.",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",

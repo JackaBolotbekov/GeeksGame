@@ -1,9 +1,5 @@
-import { GeeksServiceApp } from "./GeeksServiceApp";
-import { listStudents } from "@/lib/store";
+import { GeeksGameApp } from "./GeeksGameApp";
 
-export const dynamic = "force-dynamic";
-
-export default async function Home() {
-  const initialStudents = await listStudents().catch(() => []);
-  return <GeeksServiceApp initialStudents={initialStudents} />;
+export default function Home() {
+  return <GeeksGameApp />;
 }

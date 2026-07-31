@@ -2451,6 +2451,253 @@ button.calendarDay {
   text-align: center;
 }
 
+.gameShell {
+  width: min(480px, 100dvw);
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 10px 10px calc(100px + env(safe-area-inset-bottom));
+  overflow-x: hidden;
+  overflow-y: auto;
+  color: white;
+  touch-action: pan-y;
+}
+
+.gameTopbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 50px;
+  margin-bottom: 10px;
+}
+
+.gameBrand {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 8px;
+  font-weight: 950;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.gameLogo {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 7px 12px rgba(0, 0, 0, 0.28));
+}
+
+.gameBrand span {
+  white-space: nowrap;
+  font-size: clamp(18px, 6vw, 24px);
+}
+
+.gameBrand span span {
+  color: var(--yellow);
+}
+
+.gameBadge {
+  min-width: 74px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 223, 38, 0.44);
+  border-radius: 999px;
+  background: rgba(255, 223, 38, 0.12);
+  color: var(--yellow);
+  font-size: 13px;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.gameHome,
+.gameStubScreen {
+  display: grid;
+  gap: 14px;
+  animation: gameScreenIn 220ms ease both;
+}
+
+.gameHero {
+  min-height: 230px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 22px;
+  border: 2px solid #11131b;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 72% 22%, rgba(255, 223, 38, 0.30), transparent 34%),
+    linear-gradient(145deg, rgba(246, 243, 234, 0.10), rgba(35, 36, 44, 0.92));
+  box-shadow: 6px 7px 0 var(--yellow);
+}
+
+.gameHero span,
+.gameStubScreen p {
+  color: rgba(246, 243, 234, 0.72);
+  font-weight: 850;
+}
+
+.gameHero h1,
+.gameStubScreen h1 {
+  margin: 8px 0;
+  font-size: clamp(46px, 18vw, 80px);
+  line-height: 0.86;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+}
+
+.gameHero p {
+  max-width: 28rem;
+  margin: 0;
+  color: rgba(246, 243, 234, 0.82);
+  font-size: 17px;
+  font-weight: 750;
+  line-height: 1.32;
+}
+
+.gameCards {
+  display: grid;
+  gap: 10px;
+}
+
+.gamePlayerCard {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 12px;
+  align-items: center;
+  min-height: 82px;
+  padding: 14px;
+  border: 2px solid #11131b;
+  border-radius: 23px;
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 5px 6px 0 var(--yellow);
+}
+
+.gamePlayerCard > strong {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #11131b;
+  border-radius: 50%;
+  background: var(--yellow);
+  font-size: 22px;
+  font-weight: 950;
+}
+
+.gamePlayerCard h2 {
+  margin: 0;
+  font-size: 21px;
+  font-weight: 950;
+}
+
+.gamePlayerCard span {
+  color: #5a5f6d;
+  font-size: 15px;
+  font-weight: 850;
+}
+
+.gameStubScreen {
+  min-height: 62dvh;
+  align-content: center;
+  padding: 24px;
+  border: 2px solid #11131b;
+  border-radius: 28px;
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 6px 7px 0 var(--yellow);
+}
+
+.gameStubScreen h1 {
+  color: var(--ink);
+}
+
+.gameStubScreen p {
+  margin: 0;
+  color: #5a5f6d;
+  font-size: 18px;
+}
+
+.gameBottomNav {
+  position: fixed;
+  left: 50%;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 40;
+  width: min(452px, calc(100dvw - 22px));
+  height: 78px;
+  display: grid;
+  grid-template-columns: 1fr 86px 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 9px;
+  border: 2px solid rgba(246, 243, 234, 0.08);
+  border-radius: 25px;
+  background: linear-gradient(180deg, #292b34, #141720);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.42), inset 0 2px 0 rgba(255, 255, 255, 0.06);
+  transform: translateX(-50%);
+}
+
+.gameBottomNav button {
+  height: 52px;
+  border: 2px solid #11131b;
+  border-radius: 16px;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 30px;
+  font-weight: 950;
+  box-shadow: 0 5px 0 #11131b;
+  transition: transform 130ms ease, box-shadow 130ms ease, background 130ms ease;
+}
+
+.gameBottomNav button.active {
+  background: linear-gradient(180deg, #ffe94d, #ffd60d);
+}
+
+.gameBottomNav button:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 #11131b;
+}
+
+.gameMainButton {
+  width: 78px;
+  height: 78px !important;
+  display: grid;
+  place-items: center;
+  align-self: center;
+  margin-top: -30px;
+  border-radius: 50% !important;
+  background: var(--yellow) !important;
+}
+
+.gameMainButton span {
+  display: block;
+  font-size: 30px;
+  line-height: 1;
+}
+
+.gameMainButton small {
+  display: block;
+  margin-top: -12px;
+  font-size: 12px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+@keyframes gameScreenIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (min-width: 700px) and (min-height: 650px) {
   .snakeScreen {
     grid-template-columns: minmax(0, 1fr) 170px;
