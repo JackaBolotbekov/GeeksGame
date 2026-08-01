@@ -796,7 +796,15 @@ function ScheduleBadge({ label }: { label: string }) {
   );
 }
 
-export function GeeksServiceApp({ initialStudents }: { initialStudents: StudentView[] }) {
+export function GeeksServiceApp({
+  initialStudents,
+  initialSchedule,
+  staticMode = false,
+}: {
+  initialStudents: StudentView[];
+  initialSchedule?: ScheduleResponse;
+  staticMode?: boolean;
+}) {
   useLockedViewportZoom();
 
   const [state, setState] = useState<LoadState>("ready");
@@ -814,7 +822,7 @@ export function GeeksServiceApp({ initialStudents }: { initialStudents: StudentV
     if (rankedInitial.length > 0) return rankedInitial;
     return readCachedLeaderboard() ?? rankedInitial;
   });
-  const [schedule, setSchedule] = useState<ScheduleResponse>(() => buildScheduleResponse(DEFAULT_LESSON_SCHEDULE));
+  const [schedule, setSchedule] = useState<ScheduleResponse>(() => initialSchedule ?? buildScheduleResponse(DEFAULT_LESSON_SCHEDULE));
   const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [expandedStudentId, setExpandedStudentId] = useState<string | null>(null);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
@@ -892,6 +900,7 @@ export function GeeksServiceApp({ initialStudents }: { initialStudents: StudentV
   };
 
   useEffect(() => {
+    if (staticMode) return;
     const initialRefresh = window.setTimeout(() => {
       void refreshSchedule();
     }, 0);
@@ -906,9 +915,10 @@ export function GeeksServiceApp({ initialStudents }: { initialStudents: StudentV
       window.clearTimeout(initialRefresh);
       window.clearInterval(timer);
     };
-  }, []);
+  }, [staticMode]);
 
   useEffect(() => {
+    if (staticMode) return;
     if (state !== "ready" || activeScreen !== "profile" || teacherPreview) return;
     let cancelled = false;
     let inFlight = false;
@@ -939,9 +949,10 @@ export function GeeksServiceApp({ initialStudents }: { initialStudents: StudentV
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, [activeScreen, state, teacherPreview]);
+  }, [activeScreen, state, staticMode, teacherPreview]);
 
   useEffect(() => {
+    if (staticMode) return;
     if (state !== "ready" || activeScreen !== "leaderboard") return;
     if (teacherPreview) return;
     let cancelled = false;
@@ -991,9 +1002,10 @@ export function GeeksServiceApp({ initialStudents }: { initialStudents: StudentV
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, [activeScreen, isAdmin, sessionToken, state, teacherPreview]);
+  }, [activeScreen, isAdmin, sessionToken, state, staticMode, teacherPreview]);
 
   useEffect(() => {
+    if (staticMode) return;
     const run = async () => {
       try {
         const telegramWebApp = await waitForTelegramWebApp();
@@ -1029,7 +1041,7 @@ export function GeeksServiceApp({ initialStudents }: { initialStudents: StudentV
     void run();
     // Telegram initData is captured once on Mini App startup.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [staticMode]);
 
   return (
     <main className="shell">
