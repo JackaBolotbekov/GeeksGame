@@ -3,7 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { useState } from "react";
-import { SnakeGameScreen } from "./SnakeGame";
+import { CapyClickerScreen } from "./CapyClicker";
 
 type Screen = "home" | "game" | "profile";
 
@@ -29,7 +29,7 @@ export function GeeksGameApp() {
       </header>
 
       {screen === "game" ? (
-        <SnakeGameScreen />
+        <CapyClickerScreen />
       ) : screen === "profile" ? (
         <section className="gameStubScreen">
           <h1>Профиль</h1>

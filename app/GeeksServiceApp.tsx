@@ -3,7 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, useEffect, useRef, useState } from "react";
-import { SnakeGameScreen } from "./SnakeGame";
+import { CapyClickerScreen } from "./CapyClicker";
 import { lessonHomeworkByNumber, type LessonHomework } from "@/lib/lesson-homework";
 import { validateTeacherMaterialFile } from "@/lib/material-validation";
 import { bishkekDateKey, buildScheduleResponse, defaultTransferTarget, DEFAULT_LESSON_SCHEDULE, localDateParts, transferLessonSchedule } from "@/lib/schedule";
@@ -1115,7 +1115,7 @@ export function GeeksServiceApp({
             </div>
           )}
           {visibleScreen === "game" ? (
-            <SnakeGameScreen />
+            <CapyClickerScreen />
           ) : visibleScreen === "profile" ? (
             <ProfileScreen
               schedule={schedule}

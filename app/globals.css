@@ -2257,198 +2257,464 @@ button.calendarDay {
   letter-spacing: -0.03em;
 }
 
-.snakeScreen {
+.capyClickerScreen {
   min-height: calc(100dvh - 68px);
   display: grid;
   align-content: start;
-  gap: 12px;
+  gap: 10px;
   padding: 4px 0 110px;
   color: #fff;
 }
 
-.snakeHeader {
+.capyGameHeader {
   display: flex;
-  align-items: end;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 4px 4px 0;
 }
 
-.snakeHeader > div:first-child > span {
+.capyGameHeader > div:first-child > span {
   color: var(--yellow);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 950;
   letter-spacing: 0.15em;
   text-transform: uppercase;
 }
 
-.snakeHeader h1 {
+.capyGameHeader h1 {
   margin: 1px 0 0;
-  font-size: clamp(32px, 10vw, 48px);
+  font-size: clamp(31px, 9vw, 46px);
   font-weight: 950;
   letter-spacing: -0.06em;
   line-height: 0.95;
   text-transform: uppercase;
 }
 
-.snakeStats {
+.capyWallet {
+  min-width: 106px;
+  min-height: 48px;
   display: flex;
-  gap: 7px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 7px 12px 7px 7px;
+  border: 2px solid #11131b;
+  border-radius: 15px;
+  background: #f6f3ea;
+  color: #11131b;
+  box-shadow: 3px 3px 0 var(--yellow);
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
 }
 
-.snakeStats > span {
-  min-width: 54px;
-  padding: 7px 9px;
+.capyWallet strong {
+  font-weight: 950;
+}
+
+.capyCoin,
+.capyMiniCoin {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
   border: 2px solid #11131b;
-  border-radius: 14px;
-  background: var(--yellow);
+  border-radius: 50%;
+  background: #ffc83d;
   color: #11131b;
-  box-shadow: 3px 3px 0 #11131b;
-  font-size: 20px;
   font-weight: 950;
   line-height: 1;
+}
+
+.capyCoin {
+  width: 31px;
+  height: 31px;
+  box-shadow: inset -3px -3px 0 rgba(197, 117, 0, 0.28);
+  font-size: 15px;
+}
+
+.capyMiniCoin {
+  width: 22px;
+  height: 22px;
+  border-width: 1.5px;
+  font-size: 12px;
+}
+
+.capyGameCard {
+  position: relative;
+  min-height: min(670px, calc(100dvh - 132px));
+  display: grid;
+  grid-template-rows: auto minmax(220px, 1fr) auto;
+  overflow: hidden;
+  padding: clamp(16px, 4vw, 24px);
+  border: 2px solid #11131b;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 50% 36%, rgba(255, 255, 255, 0.28) 0 18%, transparent 45%),
+    var(--yellow);
+  color: #11131b;
+  box-shadow: 7px 7px 0 #11131b;
+  isolation: isolate;
+}
+
+.capyGameCard::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  opacity: 0.13;
+  background-image: radial-gradient(#11131b 0.75px, transparent 0.75px);
+  background-size: 14px 14px;
+  mask-image: linear-gradient(to bottom, #000, transparent 70%);
+}
+
+.capyGameIntro {
+  position: relative;
+  z-index: 3;
   text-align: center;
 }
 
-.snakeStats small {
-  display: block;
-  margin-bottom: 3px;
-  color: rgba(17, 19, 27, 0.68);
-  font-size: 8px;
+.capyRewardPill {
+  display: inline-block;
+  margin-bottom: 7px;
+  padding: 6px 11px;
+  border: 1.5px solid #11131b;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.43);
+  font-size: 9px;
+  font-weight: 950;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-.snakeBoardWrap {
-  position: relative;
-  width: min(100%, calc(100dvh - 260px));
-  aspect-ratio: 1;
-  justify-self: center;
-  padding: 9px;
-  border: 2px solid #11131b;
-  border-radius: 26px;
-  background: #f4f1e8;
-  box-shadow: 7px 7px 0 var(--yellow);
-  touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
+.capyGameIntro h2 {
+  margin: 0;
+  font-size: clamp(38px, 11vw, 62px);
+  font-weight: 1000;
+  line-height: 0.84;
+  letter-spacing: -0.07em;
+  text-transform: uppercase;
+  transform: rotate(-1.3deg);
 }
 
-.snakeBoard {
-  width: 100%;
-  height: 100%;
-  display: grid;
-  grid-template-columns: repeat(18, 1fr);
-  grid-template-rows: repeat(18, 1fr);
-  gap: 1px;
-  overflow: hidden;
-  border: 2px solid #11131b;
-  border-radius: 18px;
-  background:
-    linear-gradient(45deg, rgba(17, 19, 27, 0.035) 25%, transparent 25%, transparent 75%, rgba(17, 19, 27, 0.035) 75%),
-    #dedbd2;
-  background-size: 16px 16px;
-}
-
-.snakeCell {
-  min-width: 0;
-  min-height: 0;
-  border-radius: 28%;
-}
-
-.snakeBody,
-.snakeHead {
-  background: #11131b;
-  box-shadow: inset 0 0 0 1px rgba(255, 223, 38, 0.28);
-}
-
-.snakeHead {
-  position: relative;
-  background: var(--yellow);
-  outline: 2px solid #11131b;
-  z-index: 1;
-}
-
-.snakeFood {
-  border-radius: 50%;
-  background: #ff3864;
-  box-shadow: 0 0 0 2px #11131b, 0 0 10px rgba(255, 56, 100, 0.7);
-  transform: scale(0.68);
-}
-
-.snakeOverlay {
-  position: absolute;
-  inset: 9px;
-  display: grid;
-  place-content: center;
-  justify-items: center;
-  gap: 16px;
-  border-radius: 18px;
-  background: rgba(17, 19, 27, 0.8);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-}
-
-.snakeOverlay strong {
-  font-size: clamp(25px, 8vw, 38px);
-  font-weight: 950;
-  letter-spacing: -0.04em;
-  text-align: center;
-}
-
-.snakeOverlay button {
-  min-width: 150px;
-  min-height: 48px;
-  border: 2px solid #11131b;
-  border-radius: 16px;
-  background: var(--yellow);
-  color: #11131b;
-  box-shadow: 4px 4px 0 #11131b;
-  font: inherit;
-  font-size: 17px;
-  font-weight: 950;
-}
-
-.snakeControls {
-  display: grid;
-  grid-template-areas:
-    ". up ."
-    "left down right";
-  grid-template-columns: repeat(3, 54px);
-  justify-content: center;
-  gap: 7px;
-}
-
-.snakeControls button {
-  width: 54px;
-  height: 44px;
-  border: 2px solid #11131b;
-  border-radius: 14px;
-  background: #f4f1e8;
-  color: #11131b;
-  box-shadow: 3px 3px 0 var(--yellow);
-  font: inherit;
-  font-size: 24px;
-  font-weight: 950;
-}
-
-.snakeControls button:active {
-  transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0 var(--yellow);
-}
-
-.snakeControls .up { grid-area: up; }
-.snakeControls .left { grid-area: left; }
-.snakeControls .down { grid-area: down; }
-.snakeControls .right { grid-area: right; }
-
-.snakeHint {
-  margin: -3px 0 0;
-  color: #9699a4;
-  font-size: 11px;
+.capyGameIntro p {
+  margin: 11px auto 0;
+  max-width: 290px;
+  font-size: 12px;
   font-weight: 800;
-  letter-spacing: 0.04em;
+  opacity: 0.62;
+}
+
+.capyCreatureWrap {
+  position: relative;
+  align-self: center;
+  width: min(78vw, 330px);
+  height: min(64vw, 275px);
+  min-height: 205px;
+  margin: 0 auto -6px;
+  transform-origin: 50% 86%;
+}
+
+.capyBop0 { animation: capyBopLeft 0.22s ease-out; }
+.capyBop1 { animation: capyBopRight 0.22s ease-out; }
+
+@keyframes capyBopLeft {
+  45% { transform: translateY(-9px) rotate(-2deg) scale(1.025); }
+}
+
+@keyframes capyBopRight {
+  45% { transform: translateY(-9px) rotate(2deg) scale(1.025); }
+}
+
+.capyShadow {
+  position: absolute;
+  z-index: 0;
+  left: 12%;
+  right: 12%;
+  bottom: 3%;
+  height: 17%;
+  border-radius: 50%;
+  background: rgba(40, 27, 18, 0.2);
+  filter: blur(3px);
+}
+
+.capyCreature {
+  position: absolute;
+  inset: 0;
+}
+
+.capyHead {
+  position: absolute;
+  z-index: 3;
+  left: 13%;
+  top: 7%;
+  width: 74%;
+  height: 67%;
+  border: 3px solid #11131b;
+  border-radius: 44% 44% 48% 48% / 39% 39% 55% 55%;
+  background:
+    radial-gradient(circle at 34% 34%, rgba(255, 255, 255, 0.13) 0 8%, transparent 9%),
+    #a96d43;
+  box-shadow: inset -13px -8px 0 rgba(93, 51, 30, 0.15), 5px 7px 0 rgba(17, 19, 27, 0.1);
+}
+
+.capyBody {
+  position: absolute;
+  z-index: 1;
+  left: 21%;
+  bottom: 5%;
+  width: 58%;
+  height: 42%;
+  border: 3px solid #11131b;
+  border-radius: 45% 45% 35% 35%;
+  background: #7b482d;
+}
+
+.capyEar {
+  position: absolute;
+  z-index: 2;
+  top: 3%;
+  width: 19%;
+  height: 22%;
+  border: 3px solid #11131b;
+  border-radius: 50%;
+  background: #7b482d;
+}
+
+.capyEar::after {
+  content: "";
+  position: absolute;
+  inset: 24%;
+  border-radius: 50%;
+  background: #e29072;
+}
+
+.capyEarLeft { left: 12%; transform: rotate(-24deg); }
+.capyEarRight { right: 12%; transform: rotate(24deg); }
+
+.capyTuft {
+  position: absolute;
+  top: -11px;
+  left: 44%;
+  width: 24px;
+  height: 22px;
+  border: solid #11131b;
+  border-width: 3px 0 0 3px;
+  transform: rotate(37deg) skew(-17deg);
+}
+
+.capyEye {
+  position: absolute;
+  top: 35%;
+  width: 13px;
+  height: 17px;
+  border-radius: 50%;
+  background: #11131b;
+  box-shadow: inset 3px 2px 0 rgba(255, 255, 255, 0.38);
+}
+
+.capyEye::after {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: -9px;
+  width: 25px;
+  height: 8px;
+  border-top: 3px solid #11131b;
+  border-radius: 50%;
+}
+
+.capyEyeLeft { left: 22%; }
+.capyEyeRight { right: 22%; }
+
+.capyCheek {
+  position: absolute;
+  top: 51%;
+  width: 28px;
+  height: 13px;
+  border-radius: 50%;
+  background: rgba(242, 130, 112, 0.45);
+  filter: blur(1px);
+}
+
+.capyCheekLeft { left: 9%; }
+.capyCheekRight { right: 9%; }
+
+.capyMuzzle {
+  position: absolute;
+  left: 28%;
+  bottom: 11%;
+  width: 44%;
+  height: 37%;
+  border: 3px solid #11131b;
+  border-radius: 48% 48% 43% 43%;
+  background: #c98d61;
+}
+
+.capyNostril {
+  position: absolute;
+  top: 28%;
+  width: 9px;
+  height: 6px;
+  border-radius: 50%;
+  background: #11131b;
+}
+
+.capyNostrilLeft { left: 27%; transform: rotate(12deg); }
+.capyNostrilRight { right: 27%; transform: rotate(-12deg); }
+
+.capyMouth {
+  position: absolute;
+  left: 35%;
+  bottom: 19%;
+  width: 30%;
+  height: 9px;
+  border-bottom: 3px solid #11131b;
+  border-radius: 50%;
+}
+
+.capyPaw {
+  position: absolute;
+  bottom: -5px;
+  width: 33%;
+  height: 28%;
+  border: 3px solid #11131b;
+  border-radius: 50% 50% 38% 38%;
+  background: #a96d43;
+}
+
+.capyPawLeft { left: 7%; transform: rotate(8deg); }
+.capyPawRight { right: 7%; transform: rotate(-8deg); }
+
+.capySpark {
+  position: absolute;
+  z-index: 5;
+  color: #6946ed;
+  font-size: 29px;
+  font-weight: 950;
+  animation: capySparkle 2.4s ease-in-out infinite;
+}
+
+.capySparkOne { left: 0; top: 27%; }
+.capySparkTwo { right: 1%; top: 13%; animation-delay: -1.2s; font-size: 21px; }
+
+@keyframes capySparkle {
+  0%, 100% { transform: scale(0.72) rotate(0); opacity: 0.4; }
+  50% { transform: scale(1.1) rotate(18deg); opacity: 1; }
+}
+
+.capyActionZone {
+  position: relative;
+  z-index: 7;
+  width: 100%;
   text-align: center;
+}
+
+.capyTapButton {
+  position: relative;
+  width: min(100%, 400px);
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin: 0 auto;
+  padding: 12px 25px 11px;
+  border: 3px solid #11131b;
+  border-radius: 22px;
+  background: #6946ed;
+  color: #fff;
+  box-shadow: 0 7px 0 #11131b;
+  transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.15s ease;
+}
+
+.capyTapButton::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 1.5px solid rgba(255, 255, 255, 0.23);
+  border-radius: 15px;
+  pointer-events: none;
+}
+
+.capyTapButton > span {
+  font-size: 34px;
+  font-weight: 1000;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.capyTapButton small {
+  max-width: 62px;
+  text-align: left;
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  opacity: 0.68;
+}
+
+.capyTapButton:active {
+  transform: translateY(5px) scale(0.985);
+  box-shadow: 0 2px 0 #11131b;
+  filter: brightness(1.08);
+}
+
+.capyTapButton:focus-visible {
+  outline: 4px solid #fff;
+  outline-offset: 3px;
+}
+
+.capyTapCount {
+  margin: 13px 0 0;
+  font-size: 10px;
+  font-weight: 900;
+  opacity: 0.55;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.capyTapCount strong { color: #6946ed; }
+
+.capyBurstLayer {
+  position: absolute;
+  z-index: 12;
+  left: 50%;
+  top: -8px;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.capyRewardBurst {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  color: #11131b;
+  font-size: 24px;
+  font-weight: 1000;
+  text-shadow: 2px 2px 0 rgba(255, 255, 255, 0.6);
+  animation: capyRewardFly 0.85s cubic-bezier(0.18, 0.8, 0.3, 1) forwards;
+}
+
+@keyframes capyRewardFly {
+  0% { transform: translate(-50%, 0) scale(0.72) rotate(-4deg); opacity: 0; }
+  16% { opacity: 1; }
+  100% { transform: translate(calc(-50% + var(--capy-drift)), -115px) scale(1.06) rotate(4deg); opacity: 0; }
+}
+
+.capySrOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .gameShell {
@@ -2699,26 +2965,47 @@ button.calendarDay {
 }
 
 @media (min-width: 700px) and (min-height: 650px) {
-  .snakeScreen {
-    grid-template-columns: minmax(0, 1fr) 170px;
-    grid-template-rows: auto 1fr;
-    align-items: center;
+  .capyClickerScreen {
+    max-width: 760px;
+    margin: 0 auto;
   }
 
-  .snakeHeader {
-    grid-column: 1 / -1;
+  .capyGameCard {
+    min-height: 650px;
+  }
+}
+
+@media (max-height: 720px) {
+  .capyGameCard {
+    min-height: 555px;
+    grid-template-rows: auto minmax(170px, 1fr) auto;
   }
 
-  .snakeBoardWrap {
-    width: min(100%, 620px);
+  .capyGameIntro h2 {
+    font-size: clamp(34px, 9vw, 48px);
   }
 
-  .snakeControls {
-    align-self: center;
+  .capyGameIntro p {
+    margin-top: 7px;
   }
 
-  .snakeHint {
-    grid-column: 2;
+  .capyCreatureWrap {
+    width: min(62vw, 275px);
+    height: min(50vw, 225px);
+    min-height: 170px;
+  }
+
+  .capyTapButton {
+    min-height: 67px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .capyCreatureWrap,
+  .capySpark,
+  .capyRewardBurst {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
   }
 }
 
