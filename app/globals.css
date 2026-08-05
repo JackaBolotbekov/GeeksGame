@@ -3023,3 +3023,443 @@ button.calendarDay {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* Nursultan: games catalog and "Catch the lightning" mini game. */
+.gamesHub {
+  min-height: calc(100dvh - 68px);
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  padding: 4px 0 104px;
+}
+
+.gamesHubPlaying {
+  gap: 8px;
+}
+
+.gamesBackButton {
+  width: max-content;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 2px solid #11131b;
+  border-radius: 14px;
+  background: #f4f1e8;
+  color: #11131b;
+  box-shadow: 3px 3px 0 var(--yellow);
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.gamesBackButton:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--yellow);
+}
+
+.gamesCatalogHeader {
+  padding: 6px 4px 2px;
+}
+
+.gamesCatalogHeader > span,
+.tapGameHeader > div:first-child > span {
+  color: var(--yellow);
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.gamesCatalogHeader h1 {
+  margin: 3px 0 5px;
+  font-size: clamp(48px, 15vw, 72px);
+  font-weight: 950;
+  letter-spacing: -0.07em;
+  line-height: 0.94;
+  text-transform: uppercase;
+}
+
+.gamesCatalogHeader p {
+  max-width: 34rem;
+  margin: 0;
+  color: #a9acb7;
+  font-size: 14px;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.gamesCatalog {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.gameCatalogCard {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  position: relative;
+  padding: 10px 10px 15px;
+  overflow: hidden;
+  border: 2px solid #11131b;
+  border-radius: 24px;
+  background: #f4f1e8;
+  color: #11131b;
+  box-shadow: 5px 6px 0 var(--yellow);
+  text-align: left;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.gameCatalogCard:active {
+  transform: translate(3px, 3px);
+  box-shadow: 2px 3px 0 var(--yellow);
+}
+
+.gameCatalogCard strong {
+  margin-top: 5px;
+  font-size: clamp(20px, 6vw, 29px);
+  font-weight: 950;
+  letter-spacing: -0.05em;
+  line-height: 0.98;
+}
+
+.gameCatalogCard small {
+  margin-top: 7px;
+  color: #616572;
+  font-size: 10px;
+  font-weight: 850;
+}
+
+.gameCatalogBadge {
+  position: absolute;
+  right: 17px;
+  top: 17px;
+  z-index: 2;
+  padding: 5px 8px;
+  border: 2px solid #11131b;
+  border-radius: 999px;
+  background: #ff3864;
+  color: #fff;
+  box-shadow: 2px 2px 0 #11131b;
+  font-size: 8px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+}
+
+.gameCatalogMeta {
+  margin-top: 12px;
+  color: #6a6e79;
+  font-size: 9px;
+  font-weight: 950;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.tapCardPreview,
+.snakeCardPreview {
+  height: 152px;
+  display: grid;
+  position: relative;
+  overflow: hidden;
+  border: 2px solid #11131b;
+  border-radius: 17px;
+  background: #171922;
+}
+
+.tapCardPreview {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+  padding: 12px;
+}
+
+.tapCardPreview i {
+  border-radius: 8px;
+  background: #292c36;
+}
+
+.tapCardPreview b {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #11131b;
+  border-radius: 50%;
+  background: var(--yellow);
+  box-shadow: 0 0 0 5px rgba(255, 223, 38, 0.16), 3px 4px 0 #11131b;
+  font-size: 25px;
+  transform: translate(-50%, -50%) rotate(-8deg);
+}
+
+.snakeCardPreview {
+  display: block;
+  background:
+    linear-gradient(45deg, rgba(255, 255, 255, 0.035) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.035) 75%),
+    #252832;
+  background-size: 20px 20px;
+}
+
+.snakeCardPreview i,
+.snakeCardPreview b {
+  width: 28px;
+  height: 28px;
+  position: absolute;
+  border: 2px solid #11131b;
+  border-radius: 8px;
+  background: #f4f1e8;
+}
+
+.snakeCardPreview i:nth-child(1) { left: 24px; top: 57px; }
+.snakeCardPreview i:nth-child(2) { left: 52px; top: 57px; }
+.snakeCardPreview i:nth-child(3) { left: 80px; top: 57px; }
+.snakeCardPreview i:nth-child(4) { left: 80px; top: 29px; }
+.snakeCardPreview b { right: 22px; bottom: 22px; border-radius: 50%; background: #ff3864; box-shadow: 0 0 12px rgba(255, 56, 100, 0.65); }
+
+.gamesCatalogHint {
+  margin: 2px 0 0;
+  color: #888c98;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.tapGameScreen {
+  display: grid;
+  align-content: start;
+  gap: 11px;
+  padding-bottom: 104px;
+}
+
+.tapGameHeader {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 4px 0;
+}
+
+.tapGameHeader h1 {
+  margin: 2px 0 0;
+  font-size: clamp(33px, 10vw, 48px);
+  font-weight: 950;
+  letter-spacing: -0.07em;
+  line-height: 0.82;
+  text-transform: uppercase;
+}
+
+.tapGameStats {
+  display: flex;
+  gap: 6px;
+}
+
+.tapGameStats > span {
+  min-width: 58px;
+  padding: 7px 8px;
+  border: 2px solid #11131b;
+  border-radius: 14px;
+  background: var(--yellow);
+  color: #11131b;
+  box-shadow: 3px 3px 0 #11131b;
+  font-size: 20px;
+  font-weight: 950;
+  line-height: 1;
+  text-align: center;
+}
+
+.tapGameStats small {
+  display: block;
+  margin-bottom: 3px;
+  color: rgba(17, 19, 27, 0.65);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tapTimer {
+  height: 24px;
+  position: relative;
+  overflow: hidden;
+  border: 2px solid #11131b;
+  border-radius: 999px;
+  background: #30323b;
+}
+
+.tapTimer > span {
+  height: 100%;
+  display: block;
+  background: linear-gradient(90deg, #ff3864, var(--yellow));
+  transition: width 400ms linear;
+}
+
+.tapTimer strong {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #11131b;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.tapBoard {
+  width: min(100%, calc(100dvh - 270px));
+  aspect-ratio: 1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  position: relative;
+  justify-self: center;
+  padding: 9px;
+  border: 2px solid #11131b;
+  border-radius: 25px;
+  background: #f4f1e8;
+  box-shadow: 7px 7px 0 var(--yellow);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.tapCell {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: #dcd9d0;
+  box-shadow: inset 0 -3px 0 rgba(17, 19, 27, 0.06);
+}
+
+.lightningTarget {
+  width: 76%;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 2px solid #11131b;
+  border-radius: 50%;
+  background: var(--yellow);
+  box-shadow: 0 0 0 5px rgba(255, 223, 38, 0.24), 3px 4px 0 #11131b;
+  font-size: clamp(25px, 9vw, 43px);
+  animation: lightningPop 160ms cubic-bezier(0.2, 1.5, 0.4, 1) both, lightningGlow 700ms ease-in-out infinite alternate;
+}
+
+.lightningTarget:active {
+  transform: scale(0.86) rotate(-8deg);
+  box-shadow: 1px 1px 0 #11131b;
+}
+
+.tapGameOverlay {
+  position: absolute;
+  inset: 9px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 9px;
+  padding: 20px;
+  border-radius: 17px;
+  background: rgba(17, 19, 27, 0.88);
+  text-align: center;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.tapGameOverlay > span {
+  font-size: 48px;
+  filter: drop-shadow(0 0 12px rgba(255, 223, 38, 0.7));
+}
+
+.tapGameOverlay strong {
+  font-size: clamp(26px, 8vw, 40px);
+  font-weight: 950;
+  letter-spacing: -0.05em;
+}
+
+.tapGameOverlay p {
+  max-width: 260px;
+  margin: 0 0 4px;
+  color: #b8bbc5;
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.4;
+}
+
+.tapGameOverlay button {
+  min-width: 150px;
+  min-height: 48px;
+  border: 2px solid #11131b;
+  border-radius: 15px;
+  background: var(--yellow);
+  color: #11131b;
+  box-shadow: 4px 4px 0 #11131b;
+  font-size: 17px;
+  font-weight: 950;
+}
+
+.tapCombo {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 13px;
+  border: 1px solid #353744;
+  border-radius: 15px;
+  background: rgba(35, 36, 44, 0.9);
+}
+
+.tapCombo span,
+.tapCombo small {
+  color: #9da0ac;
+  font-size: 9px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.tapCombo strong {
+  color: var(--yellow);
+  font-size: 19px;
+  font-weight: 950;
+}
+
+.tapCombo small {
+  justify-self: end;
+  text-align: right;
+}
+
+.tapGameSignature {
+  margin: -2px 0 0;
+  color: #8f929e;
+  font-size: 10px;
+  font-weight: 750;
+  text-align: center;
+}
+
+.tapGameSignature strong,
+.tapGameSignature code {
+  color: var(--yellow);
+}
+
+@keyframes lightningPop {
+  from { opacity: 0; transform: scale(0.45) rotate(20deg); }
+  to { opacity: 1; transform: scale(1) rotate(-8deg); }
+}
+
+@keyframes lightningGlow {
+  from { filter: brightness(0.95); }
+  to { filter: brightness(1.14); }
+}
+
+@media (max-width: 390px) {
+  .gamesCatalog { gap: 8px; }
+  .gameCatalogCard { padding: 7px 7px 12px; border-radius: 20px; }
+  .tapCardPreview, .snakeCardPreview { height: 128px; }
+  .gameCatalogCard strong { font-size: 18px; }
+  .gameCatalogCard small { font-size: 9px; }
+  .tapGameStats > span { min-width: 51px; padding-inline: 6px; font-size: 18px; }
+  .tapBoard { gap: 4px; padding: 7px; }
+  .tapCell { border-radius: 12px; }
+  .tapCombo small { display: none; }
+}
